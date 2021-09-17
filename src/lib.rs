@@ -314,61 +314,66 @@ fn apply_profile_override(config: &mut VgpuConfig) -> bool {
     let gpu_type = config.gpu_type;
 
     macro_rules! handle_copy_overrides {
+        ($field:ident) => {
+            if let Some(value) = config_override.$field {
+                info!(
+                    "Patching nvidia-{}/{}: {} -> {}",
+                    gpu_type,
+                    stringify!($field),
+                    config.$field,
+                    value
+                );
+
+                config.$field = value;
+            }
+        };
         ($($field:ident),*$(,)?) => {
             $(
-                if let Some(value) = config_override.$field {
-                    info!(
-                        "Patching nvidia-{}/{}: {} -> {}",
-                        gpu_type,
-                        stringify!($field),
-                        config.$field,
-                        value
-                    );
-
-                    config.$field = value;
-                }
+                handle_copy_overrides!($field);
             )*
         };
     }
     macro_rules! handle_str_overrides {
+        ($field:ident) => {
+            if let Some(value) = config_override.$field {
+                let value_bytes = value.as_bytes();
+
+                // Use `len - 1` to account for the required NULL terminator.
+                if value_bytes.len() > config.$field.len() - 1 {
+                    error!(
+                        "Patching nvidia-{}/{}: value '{}' is too long",
+                        gpu_type,
+                        stringify!($field),
+                        value
+                    );
+
+                    return false;
+                } else {
+                    info!(
+                        "Patching nvidia-{}/{}: '{}' -> '{}'",
+                        gpu_type,
+                        stringify!($field),
+                        from_c_str(&config.$field),
+                        value
+                    );
+
+                    // Zero out the field first.
+                    config.$field.fill(0);
+
+                    // Write the string bytes.
+                    let _ = config.$field[..].as_mut().write_all(value_bytes);
+                }
+            }
+        };
         ($($field:ident),*$(,)?) => {
             $(
-                if let Some(value) = config_override.$field {
-                    let value_bytes = value.as_bytes();
-
-                    // Use `len - 1` to account for the required NULL terminator.
-                    if value_bytes.len() > config.$field.len() - 1 {
-                        error!(
-                            "Patching nvidia-{}/{}: value '{}' is too long",
-                            gpu_type,
-                            stringify!($field),
-                            value
-                        );
-
-                        return false;
-                    } else {
-                        info!(
-                            "Patching nvidia-{}/{}: '{}' -> '{}'",
-                            gpu_type,
-                            stringify!($field),
-                            from_c_str(&config.$field),
-                            value
-                        );
-
-                        // Zero out the field first
-                        config.$field.fill(0);
-
-                        let _ = config.$field[..].as_mut().write_all(value_bytes);
-                    }
-                }
+                handle_str_overrides!($field);
             )*
-        }
+        };
     }
 
-    /*
-     * While the following could be done with two statements. I wanted the log statements to be in
-     * field order.
-     */
+    // While the following could be done with two statements. I wanted the log statements to be in
+    // field order.
 
     handle_copy_overrides! {
         gpu_type,
