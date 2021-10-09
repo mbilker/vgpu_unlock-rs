@@ -18,6 +18,7 @@ use std::path::PathBuf;
 use std::str;
 
 use libc::RTLD_NEXT;
+use parking_lot::Mutex;
 use serde::Deserialize;
 
 mod dump;
@@ -26,6 +27,8 @@ mod log;
 
 use crate::format::{CStrFormat, HexFormat, StraightFormat};
 use crate::log::{error, info};
+
+static LAST_MDEV_UUID: Mutex<Option<Uuid>> = parking_lot::const_mutex(None);
 
 /// Value of the "request" argument used by `nvidia-vgpud` and `nvidia-vgpu-mgr` when calling
 /// ioctl to read the PCI device ID and type (and possibly other things) from the GPU.
@@ -139,6 +142,8 @@ struct VgpuConfig {
 struct Config<'a> {
     #[serde(borrow)]
     profile: HashMap<&'a str, VgpuProfileOverride<'a>>,
+    #[serde(borrow)]
+    mdev: HashMap<&'a str, VgpuProfileOverride<'a>>,
 }
 
 #[derive(Deserialize)]
@@ -316,6 +321,8 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
         OP_READ_START_CALL => {
             let config = &*(io_data.result as *const VgpuStart);
             info!("{:#?}", config);
+
+            *LAST_MDEV_UUID.lock() = Some(config.uuid);
         }
         _ => {}
     }
@@ -368,12 +375,22 @@ fn handle_profile_override(config: &mut VgpuConfig) -> bool {
     };
 
     let gpu_type = format!("nvidia-{}", config.gpu_type);
+    let mdev_uuid = LAST_MDEV_UUID.lock().take();
 
     if let Some(config_override) = config_overrides.profile.get(gpu_type.as_str()) {
         info!("Applying profile {} overrides", gpu_type);
 
         if !apply_profile_override(config, &gpu_type, config_override) {
             return false;
+        }
+    }
+    if let Some(mdev_uuid) = mdev_uuid.map(|uuid| uuid.to_string()) {
+        if let Some(config_override) = config_overrides.mdev.get(mdev_uuid.as_str()) {
+            info!("Applying mdev UUID {} profile overrides", mdev_uuid);
+
+            if !apply_profile_override(config, &gpu_type, config_override) {
+                return false;
+            }
         }
     }
 
