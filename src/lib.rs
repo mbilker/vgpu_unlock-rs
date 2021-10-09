@@ -6,6 +6,7 @@
 //! - DualCoder, snowman, Felix, Elec for vGPU profile modification at runtime
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::env;
 use std::fmt;
 use std::fs;
@@ -132,6 +133,12 @@ struct VgpuConfig {
     frl_enabled: u32,
     blob: [u8; 256],
     license_type: [u8; 1156],
+}
+
+#[derive(Deserialize)]
+struct Config<'a> {
+    #[serde(borrow)]
+    profile: HashMap<&'a str, VgpuProfileOverride<'a>>,
 }
 
 #[derive(Deserialize)]
@@ -301,7 +308,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             let config = &mut *(io_data.result as *mut VgpuConfig);
             info!("{:#?}", config);
 
-            if !apply_profile_override(config) {
+            if !handle_profile_override(config) {
                 error!("Failed to apply profile override");
                 return -1;
             }
@@ -338,7 +345,7 @@ pub fn from_c_str<'a>(value: &'a [u8]) -> Cow<'a, str> {
     String::from_utf8_lossy(&value[..len])
 }
 
-fn apply_profile_override(config: &mut VgpuConfig) -> bool {
+fn handle_profile_override(config: &mut VgpuConfig) -> bool {
     const DEFAULT_CONFIG_PATH: &'static str = "/etc/vgpu_unlock/profile_override.toml";
 
     let config_path = match env::var_os("VGPU_UNLOCK_PROFILE_OVERRIDE_CONFIG_PATH") {
@@ -352,7 +359,7 @@ fn apply_profile_override(config: &mut VgpuConfig) -> bool {
             return false;
         }
     };
-    let config_override: VgpuProfileOverride = match toml::from_str(&config_overrides) {
+    let config_overrides: Config = match toml::from_str(&config_overrides) {
         Ok(config) => config,
         Err(e) => {
             error!("Failed to decode config: {}", e);
@@ -360,13 +367,29 @@ fn apply_profile_override(config: &mut VgpuConfig) -> bool {
         }
     };
 
-    let gpu_type = config.gpu_type;
+    let gpu_type = format!("nvidia-{}", config.gpu_type);
 
+    if let Some(config_override) = config_overrides.profile.get(gpu_type.as_str()) {
+        info!("Applying profile {} overrides", gpu_type);
+
+        if !apply_profile_override(config, &gpu_type, config_override) {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn apply_profile_override(
+    config: &mut VgpuConfig,
+    gpu_type: &str,
+    config_override: &VgpuProfileOverride,
+) -> bool {
     macro_rules! handle_copy_overrides {
         ($field:ident) => {
             if let Some(value) = config_override.$field {
                 info!(
-                    "Patching nvidia-{}/{}: {} -> {}",
+                    "Patching {}/{}: {} -> {}",
                     gpu_type,
                     stringify!($field),
                     config.$field,
@@ -390,7 +413,7 @@ fn apply_profile_override(config: &mut VgpuConfig) -> bool {
                 // Use `len - 1` to account for the required NULL terminator.
                 if value_bytes.len() > config.$field.len() - 1 {
                     error!(
-                        "Patching nvidia-{}/{}: value '{}' is too long",
+                        "Patching {}/{}: value '{}' is too long",
                         gpu_type,
                         stringify!($field),
                         value
@@ -399,7 +422,7 @@ fn apply_profile_override(config: &mut VgpuConfig) -> bool {
                     return false;
                 } else {
                     info!(
-                        "Patching nvidia-{}/{}: '{}' -> '{}'",
+                        "Patching {}/{}: '{}' -> '{}'",
                         gpu_type,
                         stringify!($field),
                         from_c_str(&config.$field),
