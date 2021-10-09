@@ -29,7 +29,7 @@ use crate::log::{error, info};
 /// ioctl to read the PCI device ID and type (and possibly other things) from the GPU.
 const REQ_QUERY_GPU: c_ulong = 0xc020462a;
 
-/// `result` is a pointer to `uint64_t`.
+/// `result` is a pointer to `uint32_t`.
 const OP_READ_DEV_TYPE: u32 = 0x800289;
 
 /// `result` is a pointer to `uint16_t[4]`, the second element (index 1) is the device ID, the
@@ -40,7 +40,7 @@ const OP_READ_PCI_ID: u32 = 0x20801801;
 const OP_READ_VGPU_CFG: u32 = 0xa0820102;
 
 /// `nvidia-vgpu-mgr` expects this value for a vGPU capable GPU.
-const DEV_TYPE_VGPU_CAPABLE: u64 = 3;
+const DEV_TYPE_VGPU_CAPABLE: u32 = 3;
 
 /// When ioctl returns success (retval >= 0) but sets the status value of the arg structure to 3
 /// then `nvidia-vgpud` will sleep for a bit (first 0.1s then 1s then 10s) then issue the same
@@ -163,7 +163,7 @@ impl fmt::Debug for VgpuConfig {
 pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -> c_int {
     static mut IOCTL_FN_PTR: Option<unsafe extern "C" fn(RawFd, c_ulong, ...) -> c_int> = None;
 
-    //log!("ioctl({}, {}, {:?})", fd, request, data);
+    //info!("ioctl({}, {}, {:?})", fd, request, data);
 
     let next_ioctl = match IOCTL_FN_PTR {
         Some(func) => func,
@@ -195,7 +195,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
         return ret;
     }
 
-    //log!("{:x?}", io_data);
+    //info!("{:x?}", io_data);
 
     match io_data.op_type {
         OP_READ_PCI_ID => {
@@ -247,7 +247,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             *subsysid_ptr = spoofed_subsysid;
         }
         OP_READ_DEV_TYPE => {
-            let dev_type_ptr: *mut u64 = io_data.result.cast();
+            let dev_type_ptr: *mut u32 = io_data.result.cast();
 
             // Set device type to vGPU capable.
             *dev_type_ptr = DEV_TYPE_VGPU_CAPABLE;
