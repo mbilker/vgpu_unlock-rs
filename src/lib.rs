@@ -30,6 +30,9 @@ use crate::log::{error, info};
 /// ioctl to read the PCI device ID and type (and possibly other things) from the GPU.
 const REQ_QUERY_GPU: c_ulong = 0xc020462a;
 
+/// `result` is a pointer to `VgpuStart`.
+const OP_READ_START_CALL: u32 = 0xc01;
+
 /// `result` is a pointer to `uint32_t`.
 const OP_READ_DEV_TYPE: u32 = 0x800289;
 
@@ -70,6 +73,37 @@ struct Request {
     unknown_4: u32,
     /// Written by ioctl call. See comment below.
     status: u32,
+}
+
+#[derive(Clone, Copy)]
+#[repr(C)]
+struct Uuid(u32, u16, u16, [u8; 8]);
+
+impl fmt::Display for Uuid {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:08x}-{:04x}-{:04x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+            self.0,
+            self.1,
+            self.2,
+            self.3[0],
+            self.3[1],
+            self.3[2],
+            self.3[3],
+            self.3[4],
+            self.3[5],
+            self.3[6],
+            self.3[7]
+        )
+    }
+}
+
+#[repr(C)]
+struct VgpuStart {
+    uuid: Uuid,
+    config_params: [u8; 1024],
+    unknown_410: [u8; 16],
 }
 
 #[repr(C)]
@@ -125,6 +159,16 @@ struct VgpuProfileOverride<'a> {
     bar1_length: Option<u64>,
     frl_enabled: Option<u32>,
     license_type: Option<&'a str>,
+}
+
+impl fmt::Debug for VgpuStart {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("VgpuStart")
+            .field("uuid", &format_args!("{{{}}}", self.uuid))
+            .field("config_params", &CStrFormat(&self.config_params))
+            .field("unknown_410", &StraightFormat(&self.unknown_410))
+            .finish()
+    }
 }
 
 impl fmt::Debug for VgpuConfig {
@@ -261,6 +305,10 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 error!("Failed to apply profile override");
                 return -1;
             }
+        }
+        OP_READ_START_CALL => {
+            let config = &*(io_data.result as *const VgpuStart);
+            info!("{:#?}", config);
         }
         _ => {}
     }
