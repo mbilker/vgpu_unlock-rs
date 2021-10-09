@@ -19,6 +19,7 @@ use std::str;
 use libc::RTLD_NEXT;
 use serde::Deserialize;
 
+mod dump;
 mod format;
 mod log;
 
