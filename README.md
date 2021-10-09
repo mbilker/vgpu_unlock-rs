@@ -41,11 +41,13 @@ Create the directory `/etc/vgpu_unlock` which will house the vGPU profile
 override configuration file.
 
 Create the file `/etc/vgpu_unlock/profile_override.toml` with the profile
-fields that are to be overridden. The following is an example that sets
-the number of heads to 1, sets the framebuffer to be 1920x1080 (1920 * 1080
-= 2073600 pixels), enables CUDA, and disables the frame-rate limiter.
+fields that are to be overridden. The following is an example for `nvidia-55`
+(GRID P40-2A) that sets the number of heads to 1, sets the framebuffer to be
+1920x1080 (1920 * 1080 = 2073600 pixels), enables CUDA, and disables the
+frame-rate limiter.
 
 ```toml
+[profile.nvidia-55]
 num_displays = 1
 display_width = 1920
 display_height = 1080
