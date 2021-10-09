@@ -458,3 +458,9 @@ fn apply_profile_override(config: &mut VgpuConfig) -> bool {
 
     true
 }
+
+#[test]
+fn test_size() {
+    assert_eq!(mem::size_of::<VgpuStart>(), 0x420);
+    assert_eq!(mem::size_of::<VgpuConfig>(), 0x730);
+}
