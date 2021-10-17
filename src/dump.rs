@@ -2,7 +2,7 @@ use std::cmp;
 use std::fmt::Write;
 
 #[allow(dead_code)]
-fn dump(data: &[u8]) -> String {
+pub fn dump(data: &[u8]) -> String {
     let mut output = String::new();
 
     if data.is_empty() {
