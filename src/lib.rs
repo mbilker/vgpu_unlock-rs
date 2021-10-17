@@ -10,25 +10,53 @@ use std::collections::HashMap;
 use std::env;
 use std::fmt;
 use std::fs;
-use std::io::Write;
+use std::io::{ErrorKind, Write};
 use std::mem;
 use std::os::raw::{c_int, c_ulong, c_void};
 use std::os::unix::io::RawFd;
 use std::path::PathBuf;
+use std::process;
 use std::str;
 
+use ctor::ctor;
 use libc::RTLD_NEXT;
 use parking_lot::Mutex;
 use serde::Deserialize;
 
+mod config;
 mod dump;
 mod format;
 mod log;
 
+use crate::config::Config;
 use crate::format::{CStrFormat, HexFormat, StraightFormat};
 use crate::log::{error, info};
 
 static LAST_MDEV_UUID: Mutex<Option<Uuid>> = parking_lot::const_mutex(None);
+
+#[ctor]
+static CONFIG: Config = {
+    match fs::read_to_string(DEFAULT_CONFIG_PATH) {
+        Ok(config) => match toml::from_str::<Config>(&config) {
+            Ok(config) => config,
+            Err(e) => {
+                eprintln!("Failed to decode config: {}", e);
+
+                process::abort();
+            }
+        }
+        Err(e) => {
+            if e.kind() != ErrorKind::NotFound {
+                eprintln!("Failed to read config: {}", e);
+            }
+
+            Default::default()
+        }
+    }
+};
+
+const DEFAULT_CONFIG_PATH: &'static str = "/etc/vgpu_unlock/config.toml";
+const DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH: &'static str = "/etc/vgpu_unlock/profile_override.toml";
 
 /// Value of the "request" argument used by `nvidia-vgpud` and `nvidia-vgpu-mgr` when calling
 /// ioctl to read the PCI device ID and type (and possibly other things) from the GPU.
@@ -139,7 +167,7 @@ struct VgpuConfig {
 }
 
 #[derive(Deserialize)]
-struct Config<'a> {
+struct ProfileOverridesConfig<'a> {
     #[serde(borrow)]
     profile: HashMap<&'a str, VgpuProfileOverride<'a>>,
     #[serde(borrow)]
@@ -255,7 +283,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
     //info!("{:x?}", io_data);
 
     match io_data.op_type {
-        OP_READ_PCI_ID => {
+        OP_READ_PCI_ID if CONFIG.unlock => {
             // Lookup address of the device and subsystem IDs.
             let devid_ptr: *mut u16 = io_data.result.add(2).cast();
             let subsysid_ptr: *mut u16 = io_data.result.add(6).cast();
@@ -303,7 +331,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             *devid_ptr = spoofed_devid;
             *subsysid_ptr = spoofed_subsysid;
         }
-        OP_READ_DEV_TYPE => {
+        OP_READ_DEV_TYPE if CONFIG.unlock => {
             let dev_type_ptr: *mut u32 = io_data.result.cast();
 
             // Set device type to vGPU capable.
@@ -353,11 +381,9 @@ pub fn from_c_str<'a>(value: &'a [u8]) -> Cow<'a, str> {
 }
 
 fn handle_profile_override(config: &mut VgpuConfig) -> bool {
-    const DEFAULT_CONFIG_PATH: &'static str = "/etc/vgpu_unlock/profile_override.toml";
-
     let config_path = match env::var_os("VGPU_UNLOCK_PROFILE_OVERRIDE_CONFIG_PATH") {
         Some(path) => PathBuf::from(path),
-        None => PathBuf::from(DEFAULT_CONFIG_PATH),
+        None => PathBuf::from(DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH),
     };
     let config_overrides = match fs::read_to_string(&config_path) {
         Ok(data) => data,
@@ -366,7 +392,7 @@ fn handle_profile_override(config: &mut VgpuConfig) -> bool {
             return false;
         }
     };
-    let config_overrides: Config = match toml::from_str(&config_overrides) {
+    let config_overrides: ProfileOverridesConfig = match toml::from_str(&config_overrides) {
         Ok(config) => config,
         Err(e) => {
             error!("Failed to decode config: {}", e);
