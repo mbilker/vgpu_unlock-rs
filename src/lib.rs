@@ -168,9 +168,9 @@ struct VgpuConfig {
 
 #[derive(Deserialize)]
 struct ProfileOverridesConfig<'a> {
-    #[serde(borrow)]
+    #[serde(borrow, default)]
     profile: HashMap<&'a str, VgpuProfileOverride<'a>>,
-    #[serde(borrow)]
+    #[serde(borrow, default)]
     mdev: HashMap<&'a str, VgpuProfileOverride<'a>>,
 }
 
