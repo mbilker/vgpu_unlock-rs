@@ -44,7 +44,7 @@ static CONFIG: Config = {
 
                 process::abort();
             }
-        }
+        },
         Err(e) => {
             if e.kind() != ErrorKind::NotFound {
                 eprintln!("Failed to read config: {}", e);
@@ -337,22 +337,28 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             // Set device type to vGPU capable.
             *dev_type_ptr = DEV_TYPE_VGPU_CAPABLE;
         }
-        OP_READ_VGPU_CFG => {
-            let config = &mut *(io_data.result as *mut VgpuConfig);
-            info!("{:#?}", config);
-
-            if !handle_profile_override(config) {
-                error!("Failed to apply profile override");
-                return -1;
-            }
-        }
-        OP_READ_START_CALL => {
-            let config = &*(io_data.result as *const VgpuStart);
-            info!("{:#?}", config);
-
-            *LAST_MDEV_UUID.lock() = Some(config.uuid);
-        }
         _ => {}
+    }
+
+    if io_data.status == STATUS_OK {
+        match io_data.op_type {
+            OP_READ_VGPU_CFG => {
+                let config = &mut *(io_data.result as *mut VgpuConfig);
+                info!("{:#?}", config);
+
+                if !handle_profile_override(config) {
+                    error!("Failed to apply profile override");
+                    return -1;
+                }
+            }
+            OP_READ_START_CALL => {
+                let config = &*(io_data.result as *const VgpuStart);
+                info!("{:#?}", config);
+
+                *LAST_MDEV_UUID.lock() = Some(config.uuid);
+            }
+            _ => {}
+        }
     }
 
     if io_data.status != STATUS_OK {
