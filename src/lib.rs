@@ -391,13 +391,20 @@ fn handle_profile_override(config: &mut VgpuConfig) -> bool {
         Some(path) => PathBuf::from(path),
         None => PathBuf::from(DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH),
     };
+
     let config_overrides = match fs::read_to_string(&config_path) {
         Ok(data) => data,
         Err(e) => {
+            if e.kind() != ErrorKind::NotFound {
+                error!("Config file '{}' not found", config_path.display());
+                return true;
+            }
+
             error!("Failed to read '{}': {}", config_path.display(), e);
             return false;
         }
     };
+
     let config_overrides: ProfileOverridesConfig = match toml::from_str(&config_overrides) {
         Ok(config) => config,
         Err(e) => {
