@@ -486,7 +486,10 @@ fn apply_profile_override(
                     );
 
                     // Zero out the field first.
-                    config.$field.fill(0);
+                    // (`fill` was stabilized in Rust 1.50, but Debian Bullseye ships with 1.48)
+                    for v in config.$field.iter_mut() {
+                        *v = 0;
+                    }
 
                     // Write the string bytes.
                     let _ = config.$field[..].as_mut().write_all(value_bytes);
