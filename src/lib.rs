@@ -395,7 +395,7 @@ fn handle_profile_override(config: &mut VgpuConfig) -> bool {
     let config_overrides = match fs::read_to_string(&config_path) {
         Ok(data) => data,
         Err(e) => {
-            if e.kind() != ErrorKind::NotFound {
+            if e.kind() == ErrorKind::NotFound {
                 error!("Config file '{}' not found", config_path.display());
                 return true;
             }
