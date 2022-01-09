@@ -26,7 +26,7 @@ pub fn dump(data: &[u8]) -> String {
 
         output.push(' ');
         output.extend(data.iter().map(|&c| {
-            if c < 0x20 || c >= 0x7f {
+            if !(0x20..0x7f).contains(&c) {
                 '.'
             } else {
                 c as char

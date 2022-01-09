@@ -25,7 +25,7 @@ pub(crate) fn syslog(level: c_int, args: fmt::Arguments<'_>) {
 
                 let _ = msg_buffer.write_all(b"Failed to format message: ");
 
-                if let Err(_) = write!(&mut msg_buffer, "{}", e) {
+                if write!(&mut msg_buffer, "{}", e).is_err() {
                     msg_buffer.clear();
 
                     let _ = msg_buffer.write_all(b"Failed to format message and error message");

@@ -55,8 +55,8 @@ static CONFIG: Config = {
     }
 };
 
-const DEFAULT_CONFIG_PATH: &'static str = "/etc/vgpu_unlock/config.toml";
-const DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH: &'static str = "/etc/vgpu_unlock/profile_override.toml";
+const DEFAULT_CONFIG_PATH: &str = "/etc/vgpu_unlock/config.toml";
+const DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH: &str = "/etc/vgpu_unlock/profile_override.toml";
 
 /// Value of the "request" argument used by `nvidia-vgpud` and `nvidia-vgpu-mgr` when calling
 /// ioctl to read the PCI device ID and type (and possibly other things) from the GPU.
@@ -380,7 +380,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
     ret
 }
 
-pub fn from_c_str<'a>(value: &'a [u8]) -> Cow<'a, str> {
+pub fn from_c_str(value: &[u8]) -> Cow<'_, str> {
     let len = value.iter().position(|&c| c == 0).unwrap_or(value.len());
 
     String::from_utf8_lossy(&value[..len])

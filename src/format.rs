@@ -13,7 +13,7 @@ impl<'a> fmt::Debug for CStrFormat<'a> {
 
 impl<'a> fmt::Display for CStrFormat<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = crate::from_c_str(&self.0);
+        let s = crate::from_c_str(self.0);
 
         fmt::Debug::fmt(&s, f)
     }
