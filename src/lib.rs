@@ -238,7 +238,7 @@ impl fmt::Debug for VgpuConfig {
             )
             .field("encoder_capacity", &HexFormat(self.encoder_capacity))
             .field("bar1_length", &HexFormat(self.bar1_length))
-            .field("blob", &StraightFormat(&self.blob))
+            .field("blob", &StraightFormat(&self.blob[..]))
             .field("license_type", &CStrFormat(&self.license_type))
             .finish()
     }
