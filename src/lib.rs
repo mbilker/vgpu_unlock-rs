@@ -244,6 +244,10 @@ impl fmt::Debug for VgpuConfig {
     }
 }
 
+/// # Safety
+///
+/// This is actually unsafe since `ioctl` is variadic. All the `ioctl` calls in the
+/// 460.32.04 `nvidia-vgpu-mgr` and `nvidia-vgpud` binaries use only one argument.
 #[no_mangle]
 pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -> c_int {
     static mut IOCTL_FN_PTR: Option<unsafe extern "C" fn(RawFd, c_ulong, ...) -> c_int> = None;
