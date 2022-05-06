@@ -56,4 +56,13 @@ cuda_enabled = 1
 frl_enabled = 0
 ```
 
+If you want to enable VM migration or snapshotting, you must 
+recompile the `nvidia-vgpu-vfio` kernel module with `NV_KVM_MIGRATION_UAPI` 
+equal to 1. Then, create the file `/etc/vgpu_unlock/config.toml` and add the 
+following:
+
+```toml
+unlock_migration = true
+```
+
 Happy hacking!
