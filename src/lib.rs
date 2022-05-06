@@ -75,6 +75,9 @@ const OP_READ_PCI_ID: u32 = 0x20801801;
 /// `result` is a pointer to `VgpuConfig`.
 const OP_READ_VGPU_CFG: u32 = 0xa0820102;
 
+/// `result` is a pointer to `bool`.
+const OP_READ_VGPU_MIG_CAP: u32 = 0xa0810112;
+
 /// `nvidia-vgpu-mgr` expects this value for a vGPU capable GPU.
 const DEV_TYPE_VGPU_CAPABLE: u32 = 3;
 
@@ -340,9 +343,15 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
             // Set device type to vGPU capable.
             *dev_type_ptr = DEV_TYPE_VGPU_CAPABLE;
-        }
+        },
+        OP_READ_VGPU_MIG_CAP if CONFIG.unlock_migration => {
+            let mig_enabled: *mut bool = io_data.result.cast();
+
+            *mig_enabled = true;
+        },
         _ => {}
     }
+
 
     if io_data.status == STATUS_OK {
         match io_data.op_type {
