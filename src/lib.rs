@@ -26,6 +26,7 @@ use serde::Deserialize;
 mod config;
 mod dump;
 mod format;
+mod human_number;
 mod log;
 
 use crate::config::Config;
@@ -195,8 +196,11 @@ struct VgpuProfileOverride<'a> {
     multi_vgpu_supported: Option<u32>,
     pci_id: Option<u64>,
     pci_device_id: Option<u64>,
+    #[serde(with = "human_number")]
     framebuffer: Option<u64>,
+    #[serde(with = "human_number")]
     mappable_video_size: Option<u64>,
+    #[serde(with = "human_number")]
     framebuffer_reservation: Option<u64>,
     encoder_capacity: Option<u64>,
     bar1_length: Option<u64>,
