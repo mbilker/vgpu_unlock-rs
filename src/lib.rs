@@ -347,15 +347,14 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
             // Set device type to vGPU capable.
             *dev_type_ptr = DEV_TYPE_VGPU_CAPABLE;
-        },
+        }
         OP_READ_VGPU_MIGRATION_CAP if CONFIG.unlock_migration => {
             let mig_enabled: *mut bool = io_data.result.cast();
 
             *mig_enabled = true;
-        },
+        }
         _ => {}
     }
-
 
     if io_data.status == STATUS_OK {
         match io_data.op_type {

@@ -7,6 +7,7 @@ impl Defaults {
     const fn unlock() -> bool {
         true
     }
+
     #[inline]
     const fn unlock_migration() -> bool {
         false
