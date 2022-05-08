@@ -557,8 +557,15 @@ fn apply_profile_override(
     true
 }
 
-#[test]
-fn test_size() {
-    assert_eq!(mem::size_of::<VgpuStart>(), 0x420);
-    assert_eq!(mem::size_of::<VgpuConfig>(), 0x730);
+#[cfg(test)]
+mod test {
+    use std::mem;
+
+    use super::{VgpuConfig, VgpuStart};
+
+    #[test]
+    fn test_size() {
+        assert_eq!(mem::size_of::<VgpuStart>(), 0x420);
+        assert_eq!(mem::size_of::<VgpuConfig>(), 0x730);
+    }
 }
