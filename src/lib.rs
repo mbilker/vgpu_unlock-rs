@@ -349,9 +349,9 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             *dev_type_ptr = DEV_TYPE_VGPU_CAPABLE;
         }
         OP_READ_VGPU_MIGRATION_CAP if CONFIG.unlock_migration => {
-            let mig_enabled: *mut bool = io_data.result.cast();
+            let migration_enabled: *mut bool = io_data.result.cast();
 
-            *mig_enabled = true;
+            *migration_enabled = true;
         }
         _ => {}
     }
