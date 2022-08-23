@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::cmp;
 use std::fmt::Write;
 

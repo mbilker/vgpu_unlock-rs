@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 use std::convert::TryInto;
 use std::fmt;
 
