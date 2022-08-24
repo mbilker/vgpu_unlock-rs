@@ -295,6 +295,19 @@ impl fmt::Debug for VgpuConfig {
     }
 }
 
+fn check_size(name: &str, actual_size: usize, expected_size: usize) -> bool {
+    if actual_size < expected_size {
+        error!(
+            "Parameters size for {} was {} bytes, expected {} bytes",
+            name, actual_size, expected_size
+        );
+
+        false
+    } else {
+        true
+    }
+}
+
 /// # Safety
 ///
 /// This is actually unsafe since `ioctl` is variadic. All the `ioctl` calls in the
@@ -339,8 +352,27 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
     //info!("{:x?}", io_data);
 
+    macro_rules! check_size {
+        ($name:ident, $expected_type:ty) => {
+            check_size(
+                stringify!($name),
+                io_data.params_size as usize,
+                mem::size_of::<$expected_type>(),
+            )
+        };
+        ($name:ident, size: $expected_size:expr) => {
+            check_size(
+                stringify!($name),
+                io_data.params_size as usize,
+                $expected_size,
+            )
+        };
+    }
+
     match io_data.cmd {
-        NV2080_CTRL_CMD_BUS_GET_PCI_INFO if CONFIG.unlock => {
+        NV2080_CTRL_CMD_BUS_GET_PCI_INFO
+            if check_size!(NV2080_CTRL_CMD_BUS_GET_PCI_INFO, size: 8) && CONFIG.unlock =>
+        {
             // Lookup address of the device and subsystem IDs.
             let devid_ptr: *mut u16 = io_data.params.add(2).cast();
             let subsysid_ptr: *mut u16 = io_data.params.add(6).cast();
@@ -388,13 +420,17 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             *devid_ptr = spoofed_devid;
             *subsysid_ptr = spoofed_subsysid;
         }
-        NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE if CONFIG.unlock => {
+        NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE
+            if check_size!(NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE, u32) && CONFIG.unlock =>
+        {
             let dev_type_ptr: *mut u32 = io_data.params.cast();
 
             // Set device type to vGPU capable.
             *dev_type_ptr = NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST;
         }
-        OP_READ_VGPU_MIGRATION_CAP if CONFIG.unlock_migration => {
+        OP_READ_VGPU_MIGRATION_CAP
+            if check_size!(OP_READ_VGPU_MIGRATION_CAP, u8) && CONFIG.unlock_migration =>
+        {
             let migration_enabled: *mut u8 = io_data.params.cast();
 
             *migration_enabled = 1;
@@ -404,7 +440,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
     if io_data.status == NV_OK {
         match io_data.cmd {
-            OP_READ_VGPU_CFG => {
+            OP_READ_VGPU_CFG if check_size!(OP_READ_VGPU_CFG, VgpuConfig) => {
                 let config = &mut *(io_data.params as *mut VgpuConfig);
                 info!("{:#?}", config);
 
@@ -413,7 +449,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                     return -1;
                 }
             }
-            OP_READ_START_CALL => {
+            OP_READ_START_CALL if check_size!(OP_READ_START_CALL, VgpuStart) => {
                 let config = &*(io_data.params as *const VgpuStart);
                 info!("{:#?}", config);
 
