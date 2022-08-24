@@ -10,6 +10,7 @@
 
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::cmp;
 use std::env;
 use std::fmt;
 use std::fs;
@@ -562,6 +563,31 @@ fn apply_profile_override(
             )*
         };
     }
+    macro_rules! handle_bool_overrides {
+        ($source_field:ident => $target_field:ident) => {
+            if let Some(value) = config_override.$source_field {
+                let value = cmp::max(cmp::min(value, 0), 1);
+
+                info!(
+                    "Patching {}/{}: {} -> {}",
+                    vgpu_type,
+                    stringify!($target_field),
+                    config.$target_field,
+                    value
+                );
+
+                config.$target_field = value;
+            }
+        };
+        ($field:ident) => {
+            handle_bool_overrides!($field => $field);
+        };
+        ($($source_field:ident $(=> $target_field:ident)?),*$(,)?) => {
+            $(
+                handle_bool_overrides!($source_field $(=> $target_field)?);
+            )*
+        };
+    }
     macro_rules! handle_str_overrides {
         ($source_field:ident => $target_field:ident) => {
             if let Some(value) = config_override.$source_field {
@@ -672,10 +698,18 @@ fn apply_profile_override(
         display_height => max_resolution_y,
         max_pixels,
         frl_config,
+    }
+    handle_bool_overrides! {
         cuda_enabled,
         ecc_supported,
+    }
+    handle_copy_overrides! {
         mig_instance_size,
+    }
+    handle_bool_overrides! {
         multi_vgpu_supported,
+    }
+    handle_copy_overrides! {
         pci_id => vdev_id,
         pci_device_id => pdev_id,
         framebuffer => fb_length,
@@ -683,6 +717,8 @@ fn apply_profile_override(
         framebuffer_reservation => fb_reservation,
         encoder_capacity,
         bar1_length,
+    }
+    handle_bool_overrides! {
         frl_enabled => frl_enable,
     }
     handle_str_overrides! {
