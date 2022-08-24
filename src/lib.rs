@@ -4,6 +4,7 @@
 //!
 //! - DualCoder for the original [`vgpu_unlock`](https://github.com/DualCoder/vgpu_unlock)
 //! - DualCoder, snowman, Felix, Elec for vGPU profile modification at runtime
+//! - NVIDIA for their open-source driver [sources](https://github.com/NVIDIA/open-gpu-kernel-modules)
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -27,10 +28,12 @@ mod config;
 mod dump;
 mod format;
 mod human_number;
+mod ioctl;
 mod log;
 
 use crate::config::Config;
 use crate::format::{CStrFormat, HexFormat, StraightFormat};
+use crate::ioctl::_IOCWR;
 use crate::log::{error, info};
 
 static LAST_MDEV_UUID: Mutex<Option<Uuid>> = parking_lot::const_mutex(None);
@@ -59,19 +62,29 @@ static CONFIG: Config = {
 const DEFAULT_CONFIG_PATH: &str = "/etc/vgpu_unlock/config.toml";
 const DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH: &str = "/etc/vgpu_unlock/profile_override.toml";
 
+/// Pulled from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/d8f3bcff924776518f1e63286537c3cf365289ac/kernel-open/common/inc/nv-ioctl-numbers.h
+const NV_IOCTL_MAGIC: c_ulong = b'F' as _;
+
 /// Value of the "request" argument used by `nvidia-vgpud` and `nvidia-vgpu-mgr` when calling
-/// ioctl to read the PCI device ID and type (and possibly other things) from the GPU.
-const REQ_QUERY_GPU: c_ulong = 0xc020462a;
+/// ioctl to read the PCI device ID, type, and many other things from the driver.
+///
+/// Pulled from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/d8f3bcff924776518f1e63286537c3cf365289ac/src/nvidia/arch/nvalloc/unix/include/nv_escape.h
+/// and [`nvidia_ioctl`](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/98553501593ef05bddcc438689ed1136f732d40a/kernel-open/nvidia/nv.c)
+/// and [`__NV_IOWR`](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/98553501593ef05bddcc438689ed1136f732d40a/kernel-open/common/inc/nv.h)
+/// showing that `_IOCWR` is used to derive the I/O control request codes.
+const NV_ESC_RM_CONTROL: c_ulong = _IOCWR::<Nvos54Parameters>(NV_IOCTL_MAGIC, 0x2a);
 
 /// `result` is a pointer to `VgpuStart`.
 const OP_READ_START_CALL: u32 = 0xc01;
 
 /// `result` is a pointer to `uint32_t`.
-const OP_READ_DEV_TYPE: u32 = 0x800289;
+const NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE: u32 = 0x800289;
 
 /// `result` is a pointer to `uint16_t[4]`, the second element (index 1) is the device ID, the
 /// forth element (index 3) is the subsystem ID.
-const OP_READ_PCI_ID: u32 = 0x20801801;
+///
+/// Pulled from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/d8f3bcff924776518f1e63286537c3cf365289ac/src/common/sdk/nvidia/inc/ctrl/ctrl2080/ctrl2080bus.h
+const NV2080_CTRL_CMD_BUS_GET_PCI_INFO: u32 = 0x20801801;
 
 /// `result` is a pointer to `VgpuConfig`.
 const OP_READ_VGPU_CFG: u32 = 0xa0820102;
@@ -80,33 +93,40 @@ const OP_READ_VGPU_CFG: u32 = 0xa0820102;
 const OP_READ_VGPU_MIGRATION_CAP: u32 = 0xa0810112;
 
 /// `nvidia-vgpu-mgr` expects this value for a vGPU capable GPU.
-const DEV_TYPE_VGPU_CAPABLE: u32 = 3;
+///
+/// Pulled from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/d8f3bcff924776518f1e63286537c3cf365289ac/src/common/sdk/nvidia/inc/ctrl/ctrl0080/ctrl0080gpu.h
+const NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST: u32 = 3;
 
 /// When ioctl returns success (retval >= 0) but sets the status value of the arg structure to 3
 /// then `nvidia-vgpud` will sleep for a bit (first 0.1s then 1s then 10s) then issue the same
 /// ioctl call again until the status differs from 3. It will attempt this for up to 24h before
 /// giving up.
-const STATUS_OK: u32 = 0;
-const STATUS_TRY_AGAIN: u32 = 3;
+///
+/// See https://github.com/NVIDIA/open-gpu-kernel-modules/blob/d8f3bcff924776518f1e63286537c3cf365289ac/kernel-open/common/inc/nvstatuscodes.h
+const NV_OK: u32 = 0x0;
+const NV_ERR_BUSY_RETRY: u32 = 0x3;
+const NV_ERR_NOT_SUPPORTED: u32 = 0x56;
+const NV_ERR_OBJECT_NOT_FOUND: u32 = 0x57;
 
-/// When issuing ioctl with REQ_QUERY_GPU then the `argp` argument is a pointer to a structure
-/// like this
+/// When issuing ioctl with `NV_ESC_RM_CONTROL` then the `argp` argument is a pointer to a
+/// `NVOS54_PARAMETERS` structure like this.
+///
+/// See [`NVOS54_PARAMETERS`](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/d8f3bcff924776518f1e63286537c3cf365289ac/src/common/sdk/nvidia/inc/nvos.h)
 //#[derive(Debug)]
 #[repr(C)]
-struct Request {
+struct Nvos54Parameters {
     /// Initialized prior to call.
-    unknown_1: u32,
+    h_client: u32,
     /// Initialized prior to call.
-    unknown_2: u32,
+    h_object: u32,
     /// Operation type, see comment below.
-    op_type: u32,
+    cmd: u32,
     /// Pointer initialized prior to call.
     /// Pointee initialized to 0 prior to call.
     /// Pointee is written by ioctl call.
-    result: *mut c_void,
-    /// Set to 0x10 for READ_PCI_ID and set to 4 for
-    /// READ_DEV_TYPE prior to call.
-    unknown_4: u32,
+    params: *mut c_void,
+    /// Size in bytes of the object referenced in `params`.
+    params_size: u32,
     /// Written by ioctl call. See comment below.
     status: u32,
 }
@@ -274,7 +294,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
     let ret = next_ioctl(fd, request, argp);
 
-    if request != REQ_QUERY_GPU {
+    if request != NV_ESC_RM_CONTROL {
         // Not a call we care about.
         return ret;
     }
@@ -284,20 +304,22 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
         return ret;
     }
 
-    let io_data = &mut *(argp as *mut Request);
+    // Safety: NVIDIA's driver itself uses `sizeof` when calculating the ioctl number and so does
+    // this hook so the structure passed in should be of the correct size.
+    let io_data = &mut *(argp as *mut Nvos54Parameters);
 
-    if io_data.status == STATUS_TRY_AGAIN {
+    if io_data.status == NV_ERR_BUSY_RETRY {
         // Driver will try again.
         return ret;
     }
 
     //info!("{:x?}", io_data);
 
-    match io_data.op_type {
-        OP_READ_PCI_ID if CONFIG.unlock => {
+    match io_data.cmd {
+        NV2080_CTRL_CMD_BUS_GET_PCI_INFO if CONFIG.unlock => {
             // Lookup address of the device and subsystem IDs.
-            let devid_ptr: *mut u16 = io_data.result.add(2).cast();
-            let subsysid_ptr: *mut u16 = io_data.result.add(6).cast();
+            let devid_ptr: *mut u16 = io_data.params.add(2).cast();
+            let subsysid_ptr: *mut u16 = io_data.params.add(6).cast();
 
             let actual_devid = *devid_ptr;
             let actual_subsysid = *subsysid_ptr;
@@ -342,24 +364,24 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             *devid_ptr = spoofed_devid;
             *subsysid_ptr = spoofed_subsysid;
         }
-        OP_READ_DEV_TYPE if CONFIG.unlock => {
-            let dev_type_ptr: *mut u32 = io_data.result.cast();
+        NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE if CONFIG.unlock => {
+            let dev_type_ptr: *mut u32 = io_data.params.cast();
 
             // Set device type to vGPU capable.
-            *dev_type_ptr = DEV_TYPE_VGPU_CAPABLE;
+            *dev_type_ptr = NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST;
         }
         OP_READ_VGPU_MIGRATION_CAP if CONFIG.unlock_migration => {
-            let migration_enabled: *mut bool = io_data.result.cast();
+            let migration_enabled: *mut u8 = io_data.params.cast();
 
-            *migration_enabled = true;
+            *migration_enabled = 1;
         }
         _ => {}
     }
 
-    if io_data.status == STATUS_OK {
-        match io_data.op_type {
+    if io_data.status == NV_OK {
+        match io_data.cmd {
             OP_READ_VGPU_CFG => {
-                let config = &mut *(io_data.result as *mut VgpuConfig);
+                let config = &mut *(io_data.params as *mut VgpuConfig);
                 info!("{:#?}", config);
 
                 if !handle_profile_override(config) {
@@ -368,7 +390,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 }
             }
             OP_READ_START_CALL => {
-                let config = &*(io_data.result as *const VgpuStart);
+                let config = &*(io_data.params as *const VgpuStart);
                 info!("{:#?}", config);
 
                 *LAST_MDEV_UUID.lock() = Some(config.uuid);
@@ -377,20 +399,20 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
         }
     }
 
-    if io_data.status != STATUS_OK {
+    if io_data.status != NV_OK {
         // Things seems to work fine even if some operations that fail result in failed assertions.
         // So here we change the status value for these cases to cleanup the logs for
         // `nvidia-vgpu-mgr`.
-        if io_data.op_type == 0xa0820104 || io_data.op_type == 0x90960103 {
-            io_data.status = STATUS_OK;
+        if io_data.cmd == 0xa0820104 || io_data.cmd == 0x90960103 {
+            io_data.status = NV_OK;
         } else {
-            error!("op_type: 0x{:x} failed.", io_data.op_type);
+            error!("cmd: 0x{:x} failed.", io_data.cmd);
         }
     }
 
     // Workaround for some Maxwell cards not supporting reading inforom.
-    if io_data.op_type == 0x2080014b && io_data.status == 0x56 {
-        io_data.status = 0x57;
+    if io_data.cmd == 0x2080014b && io_data.status == NV_ERR_NOT_SUPPORTED {
+        io_data.status = NV_ERR_OBJECT_NOT_FOUND;
     }
 
     ret
