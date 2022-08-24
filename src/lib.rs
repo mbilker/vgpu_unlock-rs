@@ -5,6 +5,8 @@
 //! - DualCoder for the original [`vgpu_unlock`](https://github.com/DualCoder/vgpu_unlock)
 //! - DualCoder, snowman, Felix, Elec for vGPU profile modification at runtime
 //! - NVIDIA for their open-source driver [sources](https://github.com/NVIDIA/open-gpu-kernel-modules)
+//! - Arc Compute for their work on Mdev-GPU and GVM documenting more field names in the vGPU
+//!   configuration structure
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -32,7 +34,7 @@ mod ioctl;
 mod log;
 
 use crate::config::Config;
-use crate::format::{CStrFormat, HexFormat, StraightFormat};
+use crate::format::{CStrFormat, HexFormat, HexFormatSlice, StraightFormat, WideCharFormat};
 use crate::ioctl::_IOCWR;
 use crate::log::{error, info};
 
@@ -164,30 +166,34 @@ struct VgpuStart {
 
 #[repr(C)]
 struct VgpuConfig {
-    gpu_type: u32,
-    card_name: [u8; 32],
-    vgpu_type: [u8; 160],
+    vgpu_type: u32,
+    vgpu_name: [u8; 32],
+    vgpu_class: [u8; 32],
+    vgpu_signature: [u8; 128],
     features: [u8; 128],
     max_instances: u32,
-    num_displays: u32,
-    display_width: u32,
-    display_height: u32,
+    num_heads: u32,
+    max_resolution_x: u32,
+    max_resolution_y: u32,
     max_pixels: u32,
     frl_config: u32,
     cuda_enabled: u32,
     ecc_supported: u32,
     mig_instance_size: u32,
     multi_vgpu_supported: u32,
-    pci_id: u64,
-    pci_device_id: u64,
-    framebuffer: u64,
+    vdev_id: u64,
+    pdev_id: u64,
+    fb_length: u64,
     mappable_video_size: u64,
-    framebuffer_reservation: u64,
-    encoder_capacity: u64,
+    fb_reservation: u64,
+    encoder_capacity: u32,
     bar1_length: u64,
-    frl_enabled: u32,
-    blob: [u8; 256],
-    license_type: [u8; 1156],
+    frl_enable: u32,
+    adapter_name: [u8; 64],
+    adapter_name_unicode: [u16; 64],
+    short_gpu_name_string: [u8; 64],
+    licensed_product_name: [u8; 128],
+    vgpu_extra_params: [u8; 1024],
 }
 
 #[derive(Deserialize)]
@@ -222,9 +228,11 @@ struct VgpuProfileOverride<'a> {
     mappable_video_size: Option<u64>,
     #[serde(default, with = "human_number")]
     framebuffer_reservation: Option<u64>,
-    encoder_capacity: Option<u64>,
+    encoder_capacity: Option<u32>,
     bar1_length: Option<u64>,
     frl_enabled: Option<u32>,
+    adapter_name: Option<&'a str>,
+    short_gpu_name: Option<&'a str>,
     license_type: Option<&'a str>,
 }
 
@@ -241,32 +249,46 @@ impl fmt::Debug for VgpuStart {
 impl fmt::Debug for VgpuConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("VgpuConfig")
-            .field("gpu_type", &self.gpu_type)
-            .field("card_name", &CStrFormat(&self.card_name))
-            .field("vgpu_type", &CStrFormat(&self.vgpu_type))
+            .field("vgpu_type", &self.vgpu_type)
+            .field("vgpu_name", &CStrFormat(&self.vgpu_name))
+            .field("vgpu_class", &CStrFormat(&self.vgpu_class))
+            .field("vgpu_signature", &HexFormatSlice(&self.vgpu_signature))
             .field("features", &CStrFormat(&self.features))
             .field("max_instances", &self.max_instances)
-            .field("num_displays", &self.num_displays)
-            .field("display_width", &self.display_width)
-            .field("display_height", &self.display_height)
+            .field("num_heads", &self.num_heads)
+            .field("max_resolution_x", &self.max_resolution_x)
+            .field("max_resolution_y", &self.max_resolution_y)
             .field("max_pixels", &self.max_pixels)
             .field("frl_config", &self.frl_config)
             .field("cuda_enabled", &self.cuda_enabled)
             .field("ecc_supported", &self.ecc_supported)
             .field("mig_instance_size", &self.mig_instance_size)
             .field("multi_vgpu_supported", &self.multi_vgpu_supported)
-            .field("pci_id", &HexFormat(self.pci_id))
-            .field("pci_device_id", &HexFormat(self.pci_device_id))
-            .field("framebuffer", &HexFormat(self.framebuffer))
+            .field("vdev_id", &HexFormat(self.vdev_id))
+            .field("pdev_id", &HexFormat(self.pdev_id))
+            .field("fb_length", &HexFormat(self.fb_length))
             .field("mappable_video_size", &HexFormat(self.mappable_video_size))
-            .field(
-                "framebuffer_reservation",
-                &HexFormat(self.framebuffer_reservation),
-            )
+            .field("fb_reservation", &HexFormat(self.fb_reservation))
             .field("encoder_capacity", &HexFormat(self.encoder_capacity))
             .field("bar1_length", &HexFormat(self.bar1_length))
-            .field("blob", &StraightFormat(&self.blob[..]))
-            .field("license_type", &CStrFormat(&self.license_type))
+            .field("frl_enable", &self.frl_enable)
+            .field("adapter_name", &CStrFormat(&self.adapter_name))
+            .field(
+                "adapter_name_unicode",
+                &WideCharFormat(&self.adapter_name_unicode),
+            )
+            .field(
+                "short_gpu_name_string",
+                &CStrFormat(&self.short_gpu_name_string),
+            )
+            .field(
+                "licensed_product_name",
+                &CStrFormat(&self.licensed_product_name),
+            )
+            .field(
+                "vgpu_extra_params",
+                &HexFormatSlice(&self.vgpu_extra_params[..]),
+            )
             .finish()
     }
 }
@@ -451,13 +473,13 @@ fn handle_profile_override(config: &mut VgpuConfig) -> bool {
         }
     };
 
-    let gpu_type = format!("nvidia-{}", config.gpu_type);
+    let vgpu_type = format!("nvidia-{}", config.vgpu_type);
     let mdev_uuid = LAST_MDEV_UUID.lock().take();
 
-    if let Some(config_override) = config_overrides.profile.get(gpu_type.as_str()) {
-        info!("Applying profile {} overrides", gpu_type);
+    if let Some(config_override) = config_overrides.profile.get(vgpu_type.as_str()) {
+        info!("Applying profile {} overrides", vgpu_type);
 
-        if !apply_profile_override(config, &gpu_type, config_override) {
+        if !apply_profile_override(config, &vgpu_type, config_override) {
             return false;
         }
     }
@@ -465,7 +487,7 @@ fn handle_profile_override(config: &mut VgpuConfig) -> bool {
         if let Some(config_override) = config_overrides.mdev.get(mdev_uuid.as_str()) {
             info!("Applying mdev UUID {} profile overrides", mdev_uuid);
 
-            if !apply_profile_override(config, &gpu_type, config_override) {
+            if !apply_profile_override(config, &vgpu_type, config_override) {
                 return false;
             }
         }
@@ -476,40 +498,43 @@ fn handle_profile_override(config: &mut VgpuConfig) -> bool {
 
 fn apply_profile_override(
     config: &mut VgpuConfig,
-    gpu_type: &str,
+    vgpu_type: &str,
     config_override: &VgpuProfileOverride,
 ) -> bool {
     macro_rules! handle_copy_overrides {
-        ($field:ident) => {
-            if let Some(value) = config_override.$field {
+        ($source_field:ident => $target_field:ident) => {
+            if let Some(value) = config_override.$source_field {
                 info!(
                     "Patching {}/{}: {} -> {}",
-                    gpu_type,
-                    stringify!($field),
-                    config.$field,
+                    vgpu_type,
+                    stringify!($target_field),
+                    config.$target_field,
                     value
                 );
 
-                config.$field = value;
+                config.$target_field = value;
             }
         };
-        ($($field:ident),*$(,)?) => {
+        ($field:ident) => {
+            handle_copy_overrides!($field => $field);
+        };
+        ($($source_field:ident $(=> $target_field:ident)?),*$(,)?) => {
             $(
-                handle_copy_overrides!($field);
+                handle_copy_overrides!($source_field $(=> $target_field)?);
             )*
         };
     }
     macro_rules! handle_str_overrides {
-        ($field:ident) => {
-            if let Some(value) = config_override.$field {
+        ($source_field:ident => $target_field:ident) => {
+            if let Some(value) = config_override.$source_field {
                 let value_bytes = value.as_bytes();
 
                 // Use `len - 1` to account for the required NULL terminator.
-                if value_bytes.len() > config.$field.len() - 1 {
+                if value_bytes.len() > config.$target_field.len() - 1 {
                     error!(
                         "Patching {}/{}: value '{}' is too long",
-                        gpu_type,
-                        stringify!($field),
+                        vgpu_type,
+                        stringify!($target_field),
                         value
                     );
 
@@ -517,26 +542,76 @@ fn apply_profile_override(
                 } else {
                     info!(
                         "Patching {}/{}: '{}' -> '{}'",
-                        gpu_type,
-                        stringify!($field),
-                        from_c_str(&config.$field),
+                        vgpu_type,
+                        stringify!($target_field),
+                        from_c_str(&config.$target_field),
                         value
                     );
 
                     // Zero out the field first.
                     // (`fill` was stabilized in Rust 1.50, but Debian Bullseye ships with 1.48)
-                    for v in config.$field.iter_mut() {
+                    for v in config.$target_field.iter_mut() {
                         *v = 0;
                     }
 
                     // Write the string bytes.
-                    let _ = config.$field[..].as_mut().write_all(value_bytes);
+                    let _ = config.$target_field[..].as_mut().write_all(value_bytes);
                 }
             }
         };
-        ($($field:ident),*$(,)?) => {
+        ($field:ident) => {
+            handle_str_overrides!($field => $field);
+        };
+        ($($source_field:ident $(=> $target_field:ident)?),*$(,)?) => {
             $(
-                handle_str_overrides!($field);
+                handle_str_overrides!($source_field $(=> $target_field)?);
+            )*
+        };
+    }
+    macro_rules! handle_wide_str_overrides {
+        ($source_field:ident => $target_field:ident) => {
+            if let Some(value) = config_override.$source_field {
+                // Use `len - 1` to account for the required NULL terminator.
+                if value.encode_utf16().count() > config.$target_field.len() - 1 {
+                    error!(
+                        "Patching {}/{}: value '{}' is too long",
+                        vgpu_type,
+                        stringify!($target_field),
+                        value
+                    );
+
+                    return false;
+                } else {
+                    info!(
+                        "Patching {}/{}: '{}' -> '{}'",
+                        vgpu_type,
+                        stringify!($target_field),
+                        WideCharFormat(&config.$target_field),
+                        value
+                    );
+
+                    // Zero out the field first.
+                    // (`fill` was stabilized in Rust 1.50, but Debian Bullseye ships with 1.48)
+                    for v in config.$target_field.iter_mut() {
+                        *v = 0;
+                    }
+
+                    // Write the string bytes.
+                    for (v, ch) in config.$target_field[..]
+                        .iter_mut()
+                        .zip(value.encode_utf16().chain(Some(0)))
+                    {
+                        *v = ch;
+                    }
+                }
+            }
+        };
+        ($field:ident) => {
+            handle_wide_str_overrides!($field => $field);
+        };
+        ($($source_field:ident $(=> $target_field:ident)?),*$(,)?) => {
+            $(
+                handle_wide_str_overrides!($source_field $(=> $target_field)?);
             )*
         };
     }
@@ -545,35 +620,42 @@ fn apply_profile_override(
     // field order.
 
     handle_copy_overrides! {
-        gpu_type,
+        gpu_type => vgpu_type,
     }
     handle_str_overrides! {
-        card_name,
-        vgpu_type,
+        card_name => vgpu_name,
+        vgpu_type => vgpu_class,
         features,
     }
     handle_copy_overrides! {
         max_instances,
-        num_displays,
-        display_width,
-        display_height,
+        num_displays => num_heads,
+        display_width => max_resolution_x,
+        display_height => max_resolution_y,
         max_pixels,
         frl_config,
         cuda_enabled,
         ecc_supported,
         mig_instance_size,
         multi_vgpu_supported,
-        pci_id,
-        pci_device_id,
-        framebuffer,
+        pci_id => vdev_id,
+        pci_device_id => pdev_id,
+        framebuffer => fb_length,
         mappable_video_size,
-        framebuffer_reservation,
+        framebuffer_reservation => fb_reservation,
         encoder_capacity,
         bar1_length,
-        frl_enabled,
+        frl_enabled => frl_enable,
     }
     handle_str_overrides! {
-        license_type,
+        adapter_name,
+    }
+    handle_wide_str_overrides! {
+        adapter_name => adapter_name_unicode,
+    }
+    handle_str_overrides! {
+        short_gpu_name => short_gpu_name_string,
+        license_type => licensed_product_name,
     }
 
     true
