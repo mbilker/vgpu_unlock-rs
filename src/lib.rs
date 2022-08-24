@@ -161,7 +161,8 @@ impl fmt::Display for Uuid {
 struct VgpuStart {
     uuid: Uuid,
     config_params: [u8; 1024],
-    unknown_410: [u8; 16],
+    qemu_pid: u32,
+    unknown_414: [u8; 12],
 }
 
 #[repr(C)]
@@ -241,7 +242,8 @@ impl fmt::Debug for VgpuStart {
         f.debug_struct("VgpuStart")
             .field("uuid", &format_args!("{{{}}}", self.uuid))
             .field("config_params", &CStrFormat(&self.config_params))
-            .field("unknown_410", &StraightFormat(&self.unknown_410))
+            .field("qemu_pid", &self.qemu_pid)
+            .field("unknown_414", &StraightFormat(&self.unknown_414))
             .finish()
     }
 }
