@@ -251,11 +251,20 @@ impl fmt::Debug for VgpuStart {
 
 impl fmt::Debug for VgpuConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let vgpu_signature = self.vgpu_signature[..]
+            .split(|&x| x == 0)
+            .next()
+            .unwrap_or(&[]);
+        let vgpu_extra_params = self.vgpu_extra_params[..]
+            .split(|&x| x == 0)
+            .next()
+            .unwrap_or(&[]);
+
         f.debug_struct("VgpuConfig")
             .field("vgpu_type", &self.vgpu_type)
             .field("vgpu_name", &CStrFormat(&self.vgpu_name))
             .field("vgpu_class", &CStrFormat(&self.vgpu_class))
-            .field("vgpu_signature", &HexFormatSlice(&self.vgpu_signature))
+            .field("vgpu_signature", &HexFormatSlice(vgpu_signature))
             .field("features", &CStrFormat(&self.features))
             .field("max_instances", &self.max_instances)
             .field("num_heads", &self.num_heads)
@@ -288,10 +297,7 @@ impl fmt::Debug for VgpuConfig {
                 "licensed_product_name",
                 &CStrFormat(&self.licensed_product_name),
             )
-            .field(
-                "vgpu_extra_params",
-                &HexFormatSlice(&self.vgpu_extra_params[..]),
-            )
+            .field("vgpu_extra_params", &HexFormatSlice(vgpu_extra_params))
             .finish()
     }
 }
