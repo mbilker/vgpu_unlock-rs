@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: MIT
 
+// (`char::decode_utf16` and `char::REPLACEMENT_CHAR` were exposed on the fundamental type
+// in Rust 1.52)
+use std::char;
 use std::fmt::{self, Write};
 
 pub struct CStrFormat<'a>(pub &'a [u8]);
