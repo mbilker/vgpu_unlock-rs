@@ -617,7 +617,7 @@ fn apply_profile_override(
             source_field: $source_field:ident,
             target_field: $target_field:ident,
         ) => {
-            let $value = cmp::max(cmp::min($value, 0), 1);
+            let $value = cmp::max(cmp::min($value, 1), 0);
 
             patch_msg!($target_field, $value);
 
