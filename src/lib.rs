@@ -201,6 +201,7 @@ struct VgpuConfig {
     short_gpu_name_string: [u8; 64],
     licensed_product_name: [u8; 128],
     vgpu_extra_params: [u8; 1024],
+    unknown_end: [u8; 8],
 }
 
 #[repr(C)]
@@ -235,11 +236,11 @@ struct VgpuConfig2 {
     short_gpu_name_string: [u8; 64],
     licensed_product_name: [u8; 128],
     vgpu_extra_params: [u8; 1024],
-    unknown_end: [u8; 0xC1C],
+    unknown_end: [u8; 0xc1c],
 }
 
-#[repr(C)]
 #[derive(Debug)]
+#[repr(C)]
 struct LoadVgpuConfig2 {
     vgpu_type: u32,
     config: VgpuConfig2,
@@ -1002,18 +1003,10 @@ mod test {
     use super::{LoadVgpuConfig2, VgpuConfig, VgpuConfig2, VgpuStart};
 
     #[test]
-    fn test_size() {
+    fn verify_sizes() {
         assert_eq!(mem::size_of::<VgpuStart>(), 0x420);
-        assert_eq!(mem::size_of::<VgpuConfig>(), 0x730);
-    }
-
-    #[test]
-    fn verify_vgpu_config2_size() {
+        assert_eq!(mem::size_of::<VgpuConfig>(), 0x738);
         assert_eq!(std::mem::size_of::<VgpuConfig2>(), 0x1358);
-    }
-
-    #[test]
-    fn verify_load_vgpu_config2_size() {
         assert_eq!(std::mem::size_of::<LoadVgpuConfig2>(), 0x1360);
     }
 }
