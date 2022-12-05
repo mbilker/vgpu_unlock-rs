@@ -1006,7 +1006,7 @@ mod test {
     fn verify_sizes() {
         assert_eq!(mem::size_of::<VgpuStart>(), 0x420);
         assert_eq!(mem::size_of::<VgpuConfig>(), 0x738);
-        assert_eq!(std::mem::size_of::<VgpuConfig2>(), 0x1358);
-        assert_eq!(std::mem::size_of::<LoadVgpuConfig2>(), 0x1360);
+        assert_eq!(mem::size_of::<VgpuConfig2>(), 0x1358);
+        assert_eq!(mem::size_of::<LoadVgpuConfig2>(), 0x1360);
     }
 }
