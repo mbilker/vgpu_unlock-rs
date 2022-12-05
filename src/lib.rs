@@ -20,14 +20,9 @@ use std::path::PathBuf;
 use std::process;
 use std::str;
 
-use consts::DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH;
 use ctor::ctor;
 use libc::RTLD_NEXT;
 use parking_lot::Mutex;
-use structs::ProfileOverridesConfig;
-use structs::Uuid;
-use structs::VgpuConfigLike;
-use structs::VgpuProfileOverride;
 
 mod config;
 mod consts;
@@ -40,6 +35,7 @@ mod structs;
 
 use crate::config::Config;
 use crate::consts::DEFAULT_CONFIG_PATH;
+use crate::consts::DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH;
 use crate::consts::NV0000_CTRL_CMD_VGPU_GET_START_DATA;
 use crate::consts::NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE;
 use crate::consts::NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST;
@@ -60,7 +56,11 @@ use crate::structs::Nv0000CtrlVgpuGetStartDataParams;
 use crate::structs::Nv2080CtrlBusGetPciInfoParams;
 use crate::structs::Nva081CtrlVgpuConfigGetVgpuTypeInfoParams;
 use crate::structs::Nvos54Parameters;
+use crate::structs::ProfileOverridesConfig;
+use crate::structs::Uuid;
 use crate::structs::VgpuConfig;
+use crate::structs::VgpuConfigLike;
+use crate::structs::VgpuProfileOverride;
 
 static LAST_MDEV_UUID: Mutex<Option<Uuid>> = parking_lot::const_mutex(None);
 
