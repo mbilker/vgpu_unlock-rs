@@ -51,7 +51,7 @@ pub const NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST: u32 = 3;
 /// Pulled from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/5f40a5aee5ef9c92085836bf5b5a9056174f07f1/src/common/sdk/nvidia/inc/ctrl/ctrl2080/ctrl2080gpu.h#L1772
 pub const NV2080_CTRL_CMD_GPU_GET_INFOROM_OBJECT_VERSION: u32 = 0x2080014B;
 
-/// Pulled from
+/// Pulled from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/90eb10774f1c53d2364eacf9fa8f0c7a92b1b824/src/common/sdk/nvidia/inc/ctrl/ctrl9096.h#L226
 pub const NV9096_CTRL_CMD_GET_ZBC_CLEAR_TABLE: u32 = 0x90960103;
 
 /// When ioctl returns success (retval >= 0) but sets the status value of the arg structure to 3
