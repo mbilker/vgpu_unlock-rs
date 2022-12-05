@@ -598,8 +598,11 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             let devid_ptr: *mut u32 = io_data.params.add(0).cast();
             let subsysid_ptr: *mut u32 = io_data.params.add(4).cast();
 
-            let actual_devid = *devid_ptr;
-            let actual_subsysid = *subsysid_ptr;
+            let orig_devid = *devid_ptr;
+            let orig_subsysid = *subsysid_ptr;
+
+            let actual_devid = orig_devid & 0xffff;
+            let actual_subsysid = orig_subsysid & 0xffff;
 
             let (spoofed_devid, spoofed_subsysid) = match actual_devid {
                 // Maxwell
@@ -638,8 +641,8 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 _ => (actual_devid, actual_subsysid),
             };
 
-            *devid_ptr = spoofed_devid;
-            *subsysid_ptr = spoofed_subsysid;
+            *devid_ptr = (orig_devid & 0xffff0000) | spoofed_devid;
+            *subsysid_ptr = (orig_subsysid & 0xffff0000) | spoofed_subsysid;
         }
         NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE
             if check_size!(NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE, u32) && CONFIG.unlock =>
