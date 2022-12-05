@@ -94,7 +94,7 @@ const OP_READ_VGPU_CFG: u32 = 0xa0820102;
 
 /// `result` is a pointer to `VgpuConfig`.
 ///
-/// This rm control code is used starting in vgpu version 15.0 (525.60.12)
+/// This RM control command is used starting in vGPU version 15.0 (525.60.12).
 const OP_READ_VGPU_CFG2: u32 = 0xA0810103;
 
 /// `result` is a pointer to `bool`.
@@ -245,47 +245,47 @@ struct LoadVgpuConfig2 {
     config: VgpuConfig2,
 }
 
-trait VgpuConfigLike<'a> {
-    fn vgpu_type(&'a mut self) -> &'a mut u32;
-    fn vgpu_name(&'a mut self) -> &'a mut [u8; 32];
-    fn vgpu_class(&'a mut self) -> &'a mut [u8; 32];
-    fn vgpu_signature(&'a mut self) -> &'a mut [u8; 128];
-    fn features(&'a mut self) -> &'a mut [u8; 128];
-    fn max_instances(&'a mut self) -> &'a mut u32;
-    fn num_heads(&'a mut self) -> &'a mut u32;
-    fn max_resolution_x(&'a mut self) -> &'a mut u32;
-    fn max_resolution_y(&'a mut self) -> &'a mut u32;
-    fn max_pixels(&'a mut self) -> &'a mut u32;
-    fn frl_config(&'a mut self) -> &'a mut u32;
-    fn cuda_enabled(&'a mut self) -> &'a mut u32;
-    fn ecc_supported(&'a mut self) -> &'a mut u32;
-    fn mig_instance_size(&'a mut self) -> &'a mut u32;
-    fn multi_vgpu_supported(&'a mut self) -> &'a mut u32;
-    fn vdev_id(&'a mut self) -> &'a mut u64;
-    fn pdev_id(&'a mut self) -> &'a mut u64;
-    fn profile_size(&'a mut self) -> Option<&'a mut u64>;
-    fn fb_length(&'a mut self) -> &'a mut u64;
-    fn mappable_video_size(&'a mut self) -> &'a mut u64;
-    fn fb_reservation(&'a mut self) -> &'a mut u64;
-    fn encoder_capacity(&'a mut self) -> &'a mut u32;
-    fn bar1_length(&'a mut self) -> &'a mut u64;
-    fn frl_enable(&'a mut self) -> &'a mut u32;
-    fn adapter_name(&'a mut self) -> &'a mut [u8; 64];
-    fn adapter_name_unicode(&'a mut self) -> &'a mut [u16; 64];
-    fn short_gpu_name_string(&'a mut self) -> &'a mut [u8; 64];
-    fn licensed_product_name(&'a mut self) -> &'a mut [u8; 128];
-    fn vgpu_extra_params(&'a mut self) -> &'a mut [u8; 1024];
+trait VgpuConfigLike {
+    fn vgpu_type(&mut self) -> &mut u32;
+    fn vgpu_name(&mut self) -> &mut [u8; 32];
+    fn vgpu_class(&mut self) -> &mut [u8; 32];
+    fn vgpu_signature(&mut self) -> &mut [u8; 128];
+    fn features(&mut self) -> &mut [u8; 128];
+    fn max_instances(&mut self) -> &mut u32;
+    fn num_heads(&mut self) -> &mut u32;
+    fn max_resolution_x(&mut self) -> &mut u32;
+    fn max_resolution_y(&mut self) -> &mut u32;
+    fn max_pixels(&mut self) -> &mut u32;
+    fn frl_config(&mut self) -> &mut u32;
+    fn cuda_enabled(&mut self) -> &mut u32;
+    fn ecc_supported(&mut self) -> &mut u32;
+    fn mig_instance_size(&mut self) -> &mut u32;
+    fn multi_vgpu_supported(&mut self) -> &mut u32;
+    fn vdev_id(&mut self) -> &mut u64;
+    fn pdev_id(&mut self) -> &mut u64;
+    fn profile_size(&mut self) -> Option<&mut u64>;
+    fn fb_length(&mut self) -> &mut u64;
+    fn mappable_video_size(&mut self) -> &mut u64;
+    fn fb_reservation(&mut self) -> &mut u64;
+    fn encoder_capacity(&mut self) -> &mut u32;
+    fn bar1_length(&mut self) -> &mut u64;
+    fn frl_enable(&mut self) -> &mut u32;
+    fn adapter_name(&mut self) -> &mut [u8; 64];
+    fn adapter_name_unicode(&mut self) -> &mut [u16; 64];
+    fn short_gpu_name_string(&mut self) -> &mut [u8; 64];
+    fn licensed_product_name(&mut self) -> &mut [u8; 128];
+    fn vgpu_extra_params(&mut self) -> &mut [u8; 1024];
 }
 
 macro_rules! impl_trait_fn {
     ($name:ident, $t:ty) => {
-        fn $name(&'a mut self) -> &'a mut $t {
+        fn $name(&mut self) -> &mut $t {
             &mut self.$name
         }
     };
 }
 
-impl<'a> VgpuConfigLike<'a> for VgpuConfig {
+impl VgpuConfigLike for VgpuConfig {
     impl_trait_fn!(vgpu_type, u32);
     impl_trait_fn!(vgpu_name, [u8; 32]);
     impl_trait_fn!(vgpu_class, [u8; 32]);
@@ -304,7 +304,7 @@ impl<'a> VgpuConfigLike<'a> for VgpuConfig {
     impl_trait_fn!(vdev_id, u64);
     impl_trait_fn!(pdev_id, u64);
 
-    fn profile_size(&mut self) -> Option<&'a mut u64> {
+    fn profile_size(&mut self) -> Option<&mut u64> {
         None
     }
 
@@ -321,7 +321,7 @@ impl<'a> VgpuConfigLike<'a> for VgpuConfig {
     impl_trait_fn!(vgpu_extra_params, [u8; 1024]);
 }
 
-impl<'a> VgpuConfigLike<'a> for VgpuConfig2 {
+impl VgpuConfigLike for VgpuConfig2 {
     impl_trait_fn!(vgpu_type, u32);
     impl_trait_fn!(vgpu_name, [u8; 32]);
     impl_trait_fn!(vgpu_class, [u8; 32]);
@@ -340,7 +340,7 @@ impl<'a> VgpuConfigLike<'a> for VgpuConfig2 {
     impl_trait_fn!(vdev_id, u64);
     impl_trait_fn!(pdev_id, u64);
 
-    fn profile_size(&'a mut self) -> Option<&'a mut u64> {
+    fn profile_size(&mut self) -> Option<&mut u64> {
         Some(&mut self.profile_size)
     }
 
@@ -736,7 +736,7 @@ fn load_overrides() -> Result<String, bool> {
     Ok(config_overrides)
 }
 
-fn handle_profile_override<C: for<'a> VgpuConfigLike<'a>>(config: &mut C) -> bool {
+fn handle_profile_override<C: VgpuConfigLike>(config: &mut C) -> bool {
     let config_overrides = match load_overrides() {
         Ok(overrides) => overrides,
         Err(e) => return e,
@@ -773,7 +773,7 @@ fn handle_profile_override<C: for<'a> VgpuConfigLike<'a>>(config: &mut C) -> boo
     true
 }
 
-fn apply_profile_override<C: for<'a> VgpuConfigLike<'a>>(
+fn apply_profile_override<C: VgpuConfigLike>(
     config: &mut C,
     vgpu_type: &str,
     config_override: &VgpuProfileOverride,
