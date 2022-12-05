@@ -83,7 +83,7 @@ const OP_READ_START_CALL: u32 = 0xc01;
 /// `result` is a pointer to `uint32_t`.
 const NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE: u32 = 0x800289;
 
-/// `result` is a pointer to `uint16_t[4]`, the second element (index 1) is the device ID, the
+/// `result` is a pointer to `uint32_t[4]`, the second element (index 1) is the device ID, the
 /// forth element (index 3) is the subsystem ID.
 ///
 /// Pulled from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/d8f3bcff924776518f1e63286537c3cf365289ac/src/common/sdk/nvidia/inc/ctrl/ctrl2080/ctrl2080bus.h
@@ -592,11 +592,11 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
     match io_data.cmd {
         NV2080_CTRL_CMD_BUS_GET_PCI_INFO
-            if check_size!(NV2080_CTRL_CMD_BUS_GET_PCI_INFO, size: 8) && CONFIG.unlock =>
+            if check_size!(NV2080_CTRL_CMD_BUS_GET_PCI_INFO, size: 16) && CONFIG.unlock =>
         {
             // Lookup address of the device and subsystem IDs.
-            let devid_ptr: *mut u16 = io_data.params.add(2).cast();
-            let subsysid_ptr: *mut u16 = io_data.params.add(6).cast();
+            let devid_ptr: *mut u32 = io_data.params.add(0).cast();
+            let subsysid_ptr: *mut u32 = io_data.params.add(4).cast();
 
             let actual_devid = *devid_ptr;
             let actual_subsysid = *subsysid_ptr;
