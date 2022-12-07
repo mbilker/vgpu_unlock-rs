@@ -19,6 +19,6 @@ pub const fn _IOC(a: c_ulong, b: c_ulong, c: c_ulong, d: c_ulong) -> c_ulong {
 
 #[allow(non_snake_case)]
 #[inline]
-pub const fn _IOCWR<T>(b: c_ulong, c: c_ulong) -> c_ulong {
+pub const fn _IOWR<T>(b: c_ulong, c: c_ulong) -> c_ulong {
     _IOC(_IOC_READ | _IOC_WRITE, b, c, mem::size_of::<T>() as c_ulong)
 }
