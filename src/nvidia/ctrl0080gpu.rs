@@ -6,6 +6,7 @@ pub const NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE: u32 = 0x800289;
 pub const NV0080_CTRL_GPU_VIRTUALIZATION_MODE_HOST: u32 = 0x00000003;
 
 /// See `NV0080_CTRL_GPU_GET_VIRTUALIZATION_MODE_PARAMS`
+#[repr(C)]
 pub struct Nv0080CtrlGpuGetVirtualizationModeParams {
     pub virtualization_mode: u32,
 }
