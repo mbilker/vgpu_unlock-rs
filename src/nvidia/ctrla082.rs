@@ -12,8 +12,8 @@ pub struct NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     pub vgpu_name: [u8; 32],
     pub vgpu_class: [u8; 32],
     pub vgpu_signature: [u8; 128],
-    pub features: [u8; 128],
-    pub max_instances: u32,
+    pub license: [u8; 128],
+    pub max_instance: u32,
     pub num_heads: u32,
     pub max_resolution_x: u32,
     pub max_resolution_y: u32,
@@ -21,6 +21,8 @@ pub struct NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     pub frl_config: u32,
     pub cuda_enabled: u32,
     pub ecc_supported: u32,
+    // This field might not exist anymore and instead the space became padding as
+    // `NVA081_CTRL_VGPU_INFO` forces the alignment of `vdevId` to `8`.
     pub mig_instance_size: u32,
     pub multi_vgpu_supported: u32,
     pub vdev_id: u64,
@@ -55,8 +57,8 @@ impl fmt::Debug for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
             .field("vgpu_name", &CStrFormat(&self.vgpu_name))
             .field("vgpu_class", &CStrFormat(&self.vgpu_class))
             .field("vgpu_signature", &HexFormatSlice(vgpu_signature))
-            .field("features", &CStrFormat(&self.features))
-            .field("max_instances", &self.max_instances)
+            .field("license", &CStrFormat(&self.license))
+            .field("max_instance", &self.max_instance)
             .field("num_heads", &self.num_heads)
             .field("max_resolution_x", &self.max_resolution_x)
             .field("max_resolution_y", &self.max_resolution_y)

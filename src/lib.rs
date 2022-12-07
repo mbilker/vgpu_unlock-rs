@@ -95,8 +95,8 @@ trait VgpuConfigLike {
     fn vgpu_name(&mut self) -> &mut [u8; 32];
     fn vgpu_class(&mut self) -> &mut [u8; 32];
     fn vgpu_signature(&mut self) -> &mut [u8; 128];
-    fn features(&mut self) -> &mut [u8; 128];
-    fn max_instances(&mut self) -> &mut u32;
+    fn license(&mut self) -> &mut [u8; 128];
+    fn max_instance(&mut self) -> &mut u32;
     fn num_heads(&mut self) -> &mut u32;
     fn max_resolution_x(&mut self) -> &mut u32;
     fn max_resolution_y(&mut self) -> &mut u32;
@@ -147,8 +147,8 @@ impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     impl_trait_fn!(vgpu_name, [u8; 32]);
     impl_trait_fn!(vgpu_class, [u8; 32]);
     impl_trait_fn!(vgpu_signature, [u8; 128]);
-    impl_trait_fn!(features, [u8; 128]);
-    impl_trait_fn!(max_instances, u32);
+    impl_trait_fn!(license, [u8; 128]);
+    impl_trait_fn!(max_instance, u32);
     impl_trait_fn!(num_heads, u32);
     impl_trait_fn!(max_resolution_x, u32);
     impl_trait_fn!(max_resolution_y, u32);
@@ -183,8 +183,8 @@ impl VgpuConfigLike for NvA081CtrlVgpuInfo {
     impl_trait_fn!(vgpu_name, [u8; 32]);
     impl_trait_fn!(vgpu_class, [u8; 32]);
     impl_trait_fn!(vgpu_signature, [u8; 128]);
-    impl_trait_fn!(license => features, [u8; 128]);
-    impl_trait_fn!(max_instance => max_instances, u32);
+    impl_trait_fn!(license, [u8; 128]);
+    impl_trait_fn!(max_instance, u32);
     impl_trait_fn!(num_heads, u32);
     impl_trait_fn!(max_resolution_x, u32);
     impl_trait_fn!(max_resolution_y, u32);
@@ -713,10 +713,10 @@ fn apply_profile_override<C: VgpuConfigLike>(
         str: [
             card_name => vgpu_name,
             vgpu_type => vgpu_class,
-            features,
+            features => license,
         ],
         copy: [
-            max_instances,
+            max_instances => max_instance,
             num_displays => num_heads,
             display_width => max_resolution_x,
             display_height => max_resolution_y,
