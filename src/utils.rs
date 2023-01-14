@@ -21,13 +21,13 @@ impl fmt::LowerHex for AlignedU64 {
     }
 }
 
-#[cfg(feature = "proxmox")]
 /// Extracts the VMID from the last segment of a mdev uuid
 ///
 /// For example, for this uuid 00000000-0000-0000-0000-000000000100
 /// it would extract the number 100
 ///
 /// All except the last segment must be zero
+#[cfg(feature = "proxmox")]
 pub fn uuid_to_vmid(uuid: Uuid) -> Option<u64> {
     // Ensure that the first parts of the uuid are only 0
     if uuid.0 != 0 || uuid.1 != 0 || uuid.2 != 0 || uuid.3[0] != 0 || uuid.3[1] != 0 {
