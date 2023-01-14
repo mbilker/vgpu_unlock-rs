@@ -62,6 +62,8 @@ use crate::nvidia::error::{
     NV_ERR_BUSY_RETRY, NV_ERR_NOT_SUPPORTED, NV_ERR_OBJECT_NOT_FOUND, NV_OK,
 };
 use crate::nvidia::nvos::{Nvos54Parameters, NV_ESC_RM_CONTROL};
+#[cfg(feature = "proxmox")]
+use crate::utils::uuid_to_vmid;
 use crate::uuid::Uuid;
 
 static LAST_MDEV_UUID: Mutex<Option<Uuid>> = parking_lot::const_mutex(None);
@@ -220,6 +222,9 @@ struct ProfileOverridesConfig<'a> {
     profile: HashMap<&'a str, VgpuProfileOverride<'a>>,
     #[serde(borrow, default)]
     mdev: HashMap<&'a str, VgpuProfileOverride<'a>>,
+    #[cfg(feature = "proxmox")]
+    #[serde(borrow, default)]
+    vm: HashMap<u64, VgpuProfileOverride<'a>>,
 }
 
 #[derive(Deserialize)]
@@ -531,6 +536,17 @@ fn handle_profile_override<C: VgpuConfigLike>(config: &mut C) -> bool {
     if let Some(mdev_uuid) = mdev_uuid.map(|uuid| uuid.to_string()) {
         if let Some(config_override) = config_overrides.mdev.get(mdev_uuid.as_str()) {
             info!("Applying mdev UUID {} profile overrides", mdev_uuid);
+
+            if !apply_profile_override(config, &vgpu_type, config_override) {
+                return false;
+            }
+        }
+    }
+
+    #[cfg(feature = "proxmox")]
+    if let Some(vmid) = mdev_uuid.and_then(uuid_to_vmid) {
+        if let Some(config_override) = config_overrides.vm.get(&vmid) {
+            info!("Applying proxmox VMID {} profile overrides", vmid);
 
             if !apply_profile_override(config, &vgpu_type, config_override) {
                 return false;
