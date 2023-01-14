@@ -17,3 +17,4 @@ toml = "0.5.8"
 [features]
 # Feature flag to enable syntactic sugar for proxmox users
 proxmox = []
+default = ["proxmox"]
