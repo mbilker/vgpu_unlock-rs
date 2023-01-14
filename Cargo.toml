@@ -13,3 +13,7 @@ libc = "0.2.102"
 parking_lot = "0.11.2"
 serde = { version = "1.0.130", features = ["derive"] }
 toml = "0.5.8"
+
+[features]
+# Feature flag to enable syntactic sugar for proxmox users
+proxmox = []
