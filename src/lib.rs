@@ -224,7 +224,7 @@ struct ProfileOverridesConfig<'a> {
     mdev: HashMap<&'a str, VgpuProfileOverride<'a>>,
     #[cfg(feature = "proxmox")]
     #[serde(borrow, default)]
-    vm: HashMap<u64, VgpuProfileOverride<'a>>,
+    vm: HashMap<&'a str, VgpuProfileOverride<'a>>,
 }
 
 #[derive(Deserialize)]
@@ -545,7 +545,8 @@ fn handle_profile_override<C: VgpuConfigLike>(config: &mut C) -> bool {
 
     #[cfg(feature = "proxmox")]
     if let Some(vmid) = mdev_uuid.and_then(uuid_to_vmid) {
-        if let Some(config_override) = config_overrides.vm.get(&vmid) {
+        let vmid = vmid.to_string();
+        if let Some(config_override) = config_overrides.vm.get(vmid.as_str()) {
             info!("Applying proxmox VMID {} profile overrides", vmid);
 
             if !apply_profile_override(config, &vgpu_type, config_override) {
