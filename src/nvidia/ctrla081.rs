@@ -76,10 +76,11 @@ pub struct NvA081CtrlCmdVgpuConfigGetMigrationCapParams {
 
 impl fmt::Debug for NvA081CtrlVgpuInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let vgpu_signature = self.vgpu_signature[..]
-            .split(|&x| x == 0)
-            .next()
-            .unwrap_or(&[]);
+        let vgpu_signature = if self.vgpu_signature[..].iter().any(|&x| x != 0) {
+            &self.vgpu_signature[..]
+        } else {
+            &[]
+        };
         let vgpu_extra_params = self.vgpu_extra_params[..]
             .split(|&x| x == 0)
             .next()
