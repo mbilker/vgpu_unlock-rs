@@ -314,7 +314,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
         return ret;
     }
 
-    //info!("{:x?}", io_data);
+    //info!("{:#x?}", io_data);
 
     macro_rules! check_size {
         ($name:ident, $expected_type:ty) => {
