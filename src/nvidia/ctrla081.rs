@@ -51,7 +51,6 @@ pub struct NvA081CtrlVgpuInfo {
     pub exclusive_type: u32,
     pub exclusive_size: u32,
     pub gpu_instance_profile_id: u32,
-    unknown_end: [u8; 0xc00],
 }
 
 pub const NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO: u32 = 0xa0810103;
@@ -59,11 +58,11 @@ pub const NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO: u32 = 0xa0810103;
 /// This RM control command is used starting in vGPU version 15.0 (525.60.12).
 ///
 /// See `NVA081_CTRL_VGPU_CONFIG_GET_VGPU_TYPE_INFO_PARAMS`
-#[derive(Debug)]
 #[repr(C)]
 pub struct NvA081CtrlVgpuConfigGetVgpuTypeInfoParams {
     pub vgpu_type: u32,
     pub vgpu_type_info: NvA081CtrlVgpuInfo,
+    unknown_end: [u8; 0xc00],
 }
 
 pub const NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_CAP: u32 = 0xa0810112;
@@ -137,6 +136,15 @@ impl fmt::Debug for NvA081CtrlVgpuInfo {
     }
 }
 
+impl fmt::Debug for NvA081CtrlVgpuConfigGetVgpuTypeInfoParams {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("NvA081CtrlVgpuConfigGetVgpuTypeInfoParams")
+            .field("vgpu_type", &self.vgpu_type)
+            .field("vgpu_type_info", &self.vgpu_type_info)
+            .finish()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::mem;
@@ -145,7 +153,7 @@ mod test {
 
     #[test]
     fn verify_sizes() {
-        assert_eq!(mem::size_of::<NvA081CtrlVgpuInfo>(), 0x1358);
+        assert_eq!(mem::size_of::<NvA081CtrlVgpuInfo>(), 0x758);
         assert_eq!(
             mem::size_of::<NvA081CtrlVgpuConfigGetVgpuTypeInfoParams>(),
             0x1360
