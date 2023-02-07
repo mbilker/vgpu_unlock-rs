@@ -48,10 +48,11 @@ impl fmt::Debug for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
         } else {
             &[]
         };
-        let vgpu_extra_params = self.vgpu_extra_params[..]
-            .split(|&x| x == 0)
-            .next()
-            .unwrap_or(&[]);
+        let vgpu_extra_params = if self.vgpu_extra_params[..].iter().any(|&x| x != 0) {
+            &self.vgpu_extra_params[..]
+        } else {
+            &[]
+        };
 
         f.debug_struct("NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams")
             .field("vgpu_type", &self.vgpu_type)
