@@ -121,7 +121,7 @@ trait VgpuConfigLike {
     fn adapter_name_unicode(&mut self) -> &mut [u16; 64];
     fn short_gpu_name_string(&mut self) -> &mut [u8; 64];
     fn licensed_product_name(&mut self) -> &mut [u8; 128];
-    fn vgpu_extra_params(&mut self) -> &mut [u8; 1024];
+    fn vgpu_extra_params(&mut self) -> &mut [u8];
 }
 
 macro_rules! impl_trait_fn {
@@ -177,7 +177,7 @@ impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     impl_trait_fn!(adapter_name_unicode, [u16; 64]);
     impl_trait_fn!(short_gpu_name_string, [u8; 64]);
     impl_trait_fn!(licensed_product_name, [u8; 128]);
-    impl_trait_fn!(vgpu_extra_params, [u8; 1024]);
+    impl_trait_fn!(vgpu_extra_params, [u8]);
 }
 
 impl VgpuConfigLike for NvA081CtrlVgpuInfo {
@@ -213,7 +213,7 @@ impl VgpuConfigLike for NvA081CtrlVgpuInfo {
     impl_trait_fn!(adapter_name_unicode, [u16; 64]);
     impl_trait_fn!(short_gpu_name_string, [u8; 64]);
     impl_trait_fn!(licensed_product_name, [u8; 128]);
-    impl_trait_fn!(vgpu_extra_params, [u8; 1024]);
+    impl_trait_fn!(vgpu_extra_params, [u8]);
 }
 
 #[derive(Deserialize)]
@@ -426,19 +426,23 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
                 *LAST_MDEV_UUID.lock() = Some(config.mdev_uuid);
             }
-            NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO
-                if check_size!(
-                    NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
-                    NvA081CtrlVgpuConfigGetVgpuTypeInfoParams
-                ) =>
-            {
-                let params: &mut NvA081CtrlVgpuConfigGetVgpuTypeInfoParams =
-                    &mut *io_data.params.cast();
-                info!("{:#?}", params);
+            NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO => {
+                // 17.0 driver sends larger struct with size 5096 bytes. Only extra members added at the end,
+                // nothing in between or changed, so accessing the larger struct is "safe"
+                if io_data.params_size == 5096
+                    || check_size!(
+                        NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
+                        NvA081CtrlVgpuConfigGetVgpuTypeInfoParams
+                    )
+                {
+                    let params: &mut NvA081CtrlVgpuConfigGetVgpuTypeInfoParams =
+                        &mut *io_data.params.cast();
+                    info!("{:#?}", params);
 
-                if !handle_profile_override(&mut params.vgpu_type_info) {
-                    error!("Failed to apply profile override");
-                    return -1;
+                    if !handle_profile_override(&mut params.vgpu_type_info) {
+                        error!("Failed to apply profile override");
+                        return -1;
+                    }
                 }
             }
             NVA082_CTRL_CMD_HOST_VGPU_DEVICE_GET_VGPU_TYPE_INFO
