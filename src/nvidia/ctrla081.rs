@@ -1,6 +1,5 @@
 ///! Sourced from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/758b4ee8189c5198504cb1c3c5bc29027a9118a3/src/common/sdk/nvidia/inc/ctrl/ctrla081.h
 use std::fmt;
-use std::mem::size_of;
 
 use super::ctrl2080gpu::{NV2080_GPU_MAX_NAME_STRING_LENGTH, NV_GRID_LICENSE_INFO_MAX_LENGTH};
 use crate::format::{CStrFormat, HexFormat, HexFormatSlice, WideCharFormat};
@@ -46,8 +45,7 @@ pub struct NvA081CtrlVgpuInfo {
     pub adapter_name_unicode: [u16; NV2080_GPU_MAX_NAME_STRING_LENGTH],
     pub short_gpu_name_string: [u8; NV2080_GPU_MAX_NAME_STRING_LENGTH],
     pub licensed_product_name: [u8; NV_GRID_LICENSE_INFO_MAX_LENGTH],
-    // this is an array of NvU32 but having it as u8 makes it easier :)
-    pub vgpu_extra_params: [u8; NVA081_EXTRA_PARAMETERS_SIZE * size_of::<u32>()],
+    pub vgpu_extra_params: [u32; NVA081_EXTRA_PARAMETERS_SIZE],
     pub ftrace_enable: u32,
     pub gpu_direct_supported: u32,
     pub nvlink_p2p_supported: u32,
@@ -133,7 +131,7 @@ impl fmt::Debug for NvA081CtrlVgpuInfo {
                 "licensed_product_name",
                 &CStrFormat(&self.licensed_product_name),
             )
-            .field("vgpu_extra_params", &CStrFormat(vgpu_extra_params))
+            .field("vgpu_extra_params", &HexFormatSlice(vgpu_extra_params))
             .field("ftrace_enable", &self.ftrace_enable)
             .field("gpu_direct_supported", &self.gpu_direct_supported)
             .field("nvlink_p2p_supported", &self.nvlink_p2p_supported)
