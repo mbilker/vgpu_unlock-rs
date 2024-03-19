@@ -96,7 +96,7 @@ trait VgpuConfigLike {
     fn vgpu_type(&mut self) -> &mut u32;
     fn vgpu_name(&mut self) -> &mut [u8; 32];
     fn vgpu_class(&mut self) -> &mut [u8; 32];
-    fn vgpu_signature(&mut self) -> &mut [u8; 128];
+    //fn vgpu_signature(&mut self) -> &mut [u8; 128];
     fn license(&mut self) -> &mut [u8; 128];
     fn max_instance(&mut self) -> &mut u32;
     fn num_heads(&mut self) -> &mut u32;
@@ -110,7 +110,7 @@ trait VgpuConfigLike {
     fn multi_vgpu_supported(&mut self) -> &mut u32;
     fn vdev_id(&mut self) -> &mut u64;
     fn pdev_id(&mut self) -> &mut u64;
-    fn profile_size(&mut self) -> Option<&mut u64>;
+    //fn profile_size(&mut self) -> Option<&mut u64>;
     fn fb_length(&mut self) -> &mut u64;
     fn mappable_video_size(&mut self) -> &mut u64;
     fn fb_reservation(&mut self) -> &mut u64;
@@ -121,7 +121,7 @@ trait VgpuConfigLike {
     fn adapter_name_unicode(&mut self) -> &mut [u16; 64];
     fn short_gpu_name_string(&mut self) -> &mut [u8; 64];
     fn licensed_product_name(&mut self) -> &mut [u8; 128];
-    fn vgpu_extra_params(&mut self) -> &mut [u8];
+    //fn vgpu_extra_params(&mut self) -> &mut [u8];
 }
 
 macro_rules! impl_trait_fn {
@@ -148,7 +148,7 @@ impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     impl_trait_fn!(vgpu_type, u32);
     impl_trait_fn!(vgpu_name, [u8; 32]);
     impl_trait_fn!(vgpu_class, [u8; 32]);
-    impl_trait_fn!(vgpu_signature, [u8; 128]);
+    //impl_trait_fn!(vgpu_signature, [u8; 128]);
     impl_trait_fn!(license, [u8; 128]);
     impl_trait_fn!(max_instance, u32);
     impl_trait_fn!(num_heads, u32);
@@ -163,9 +163,11 @@ impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     impl_trait_fn!(vdev_id, u64);
     impl_trait_fn!(pdev_id, u64);
 
+    /*
     fn profile_size(&mut self) -> Option<&mut u64> {
         None
     }
+    */
 
     impl_trait_fn!(fb_length, u64);
     impl_trait_fn!(mappable_video_size, u64);
@@ -177,14 +179,14 @@ impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     impl_trait_fn!(adapter_name_unicode, [u16; 64]);
     impl_trait_fn!(short_gpu_name_string, [u8; 64]);
     impl_trait_fn!(licensed_product_name, [u8; 128]);
-    impl_trait_fn!(vgpu_extra_params, [u8]);
+    //impl_trait_fn!(vgpu_extra_params, [u8]);
 }
 
 impl VgpuConfigLike for NvA081CtrlVgpuInfo {
     impl_trait_fn!(vgpu_type, u32);
     impl_trait_fn!(vgpu_name, [u8; 32]);
     impl_trait_fn!(vgpu_class, [u8; 32]);
-    impl_trait_fn!(vgpu_signature, [u8; 128]);
+    //impl_trait_fn!(vgpu_signature, [u8; 128]);
     impl_trait_fn!(license, [u8; 128]);
     impl_trait_fn!(max_instance, u32);
     impl_trait_fn!(num_heads, u32);
@@ -199,9 +201,11 @@ impl VgpuConfigLike for NvA081CtrlVgpuInfo {
     impl_trait_fn_aligned!(vdev_id, u64);
     impl_trait_fn_aligned!(pdev_id, u64);
 
+    /*
     fn profile_size(&mut self) -> Option<&mut u64> {
         Some(&mut self.profile_size.0)
     }
+    */
 
     impl_trait_fn_aligned!(fb_length, u64);
     impl_trait_fn_aligned!(mappable_video_size, u64);
@@ -213,26 +217,26 @@ impl VgpuConfigLike for NvA081CtrlVgpuInfo {
     impl_trait_fn!(adapter_name_unicode, [u16; 64]);
     impl_trait_fn!(short_gpu_name_string, [u8; 64]);
     impl_trait_fn!(licensed_product_name, [u8; 128]);
-    impl_trait_fn!(vgpu_extra_params, [u8]);
+    //impl_trait_fn!(vgpu_extra_params, [u8]);
 }
 
 #[derive(Deserialize)]
-struct ProfileOverridesConfig<'a> {
-    #[serde(borrow, default)]
-    profile: HashMap<&'a str, VgpuProfileOverride<'a>>,
-    #[serde(borrow, default)]
-    mdev: HashMap<&'a str, VgpuProfileOverride<'a>>,
+struct ProfileOverridesConfig {
+    #[serde(default)]
+    profile: HashMap<String, VgpuProfileOverride>,
+    #[serde(default)]
+    mdev: HashMap<String, VgpuProfileOverride>,
     #[cfg(feature = "proxmox")]
-    #[serde(borrow, default)]
-    vm: HashMap<&'a str, VgpuProfileOverride<'a>>,
+    #[serde(default)]
+    vm: HashMap<String, VgpuProfileOverride>,
 }
 
 #[derive(Deserialize)]
-struct VgpuProfileOverride<'a> {
+struct VgpuProfileOverride {
     gpu_type: Option<u32>,
-    card_name: Option<&'a str>,
-    vgpu_type: Option<&'a str>,
-    features: Option<&'a str>,
+    card_name: Option<String>,
+    vgpu_type: Option<String>,
+    features: Option<String>,
     max_instances: Option<u32>,
     num_displays: Option<u32>,
     display_width: Option<u32>,
@@ -254,9 +258,9 @@ struct VgpuProfileOverride<'a> {
     encoder_capacity: Option<u32>,
     bar1_length: Option<u64>,
     frl_enabled: Option<u32>,
-    adapter_name: Option<&'a str>,
-    short_gpu_name: Option<&'a str>,
-    license_type: Option<&'a str>,
+    adapter_name: Option<String>,
+    short_gpu_name: Option<String>,
+    license_type: Option<String>,
 }
 
 fn check_size(name: &str, actual_size: usize, expected_size: usize) -> bool {
@@ -620,7 +624,7 @@ fn apply_profile_override<C: VgpuConfigLike>(
             source_field: $source_field:ident,
             target_field: $target_field:ident,
         ) => {
-            if let Some(value) = config_override.$source_field {
+            if let Some(value) = config_override.$source_field.as_ref() {
                 handle_override! {
                     class: $class,
                     value: value,
@@ -638,7 +642,7 @@ fn apply_profile_override<C: VgpuConfigLike>(
             source_field: $source_field:ident,
             target_field: $target_field:ident,
         ) => {
-            let $value = cmp::max(cmp::min($value, 1), 0);
+            let $value = cmp::max(cmp::min(*$value, 1), 0);
 
             patch_msg!($target_field, $value);
 
@@ -652,7 +656,7 @@ fn apply_profile_override<C: VgpuConfigLike>(
         ) => {
             patch_msg!($target_field, $value);
 
-            *config.$target_field() = $value;
+            *config.$target_field() = *$value;
         };
         (
             class: str,
