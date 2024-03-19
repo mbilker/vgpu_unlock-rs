@@ -5,6 +5,9 @@
 use std::char;
 use std::fmt::{self, Write};
 
+use crate::to_bytes::ToBytes;
+use crate::utils;
+
 pub struct CStrFormat<'a>(pub &'a [u8]);
 
 impl<'a> fmt::Debug for CStrFormat<'a> {
@@ -16,7 +19,7 @@ impl<'a> fmt::Debug for CStrFormat<'a> {
 
 impl<'a> fmt::Display for CStrFormat<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let s = crate::from_c_str(self.0);
+        let s = utils::from_c_str(self.0);
 
         fmt::Debug::fmt(&s, f)
     }
@@ -37,16 +40,16 @@ impl<T: fmt::LowerHex> fmt::Display for HexFormat<T> {
     }
 }
 
-pub struct HexFormatSlice<'a>(pub &'a [u8]);
+pub struct HexFormatSlice<'a, T>(pub &'a [T]);
 
-impl<'a> fmt::Debug for HexFormatSlice<'a> {
+impl<'a, T: Copy + fmt::LowerHex + ToBytes> fmt::Debug for HexFormatSlice<'a, T> {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(self, f)
     }
 }
 
-impl<'a> fmt::Display for HexFormatSlice<'a> {
+impl<'a, T: Copy + fmt::LowerHex + ToBytes> fmt::Display for HexFormatSlice<'a, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.0.is_empty() {
             f.write_str("[]")
@@ -54,7 +57,9 @@ impl<'a> fmt::Display for HexFormatSlice<'a> {
             f.write_str("0x")?;
 
             for v in self.0.iter() {
-                write!(f, "{:02x}", v)?;
+                for b in v.to_ne_bytes() {
+                    write!(f, "{b:02x}")?;
+                }
             }
 
             Ok(())

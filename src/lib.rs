@@ -8,7 +8,6 @@
 //! - Arc Compute for their work on Mdev-GPU and GVM documenting more field names in the vGPU
 //!   configuration structure
 
-use std::borrow::Cow;
 use std::cmp;
 use std::collections::HashMap;
 use std::env;
@@ -33,6 +32,7 @@ mod human_number;
 mod ioctl;
 mod log;
 mod nvidia;
+mod to_bytes;
 mod utils;
 mod uuid;
 
@@ -489,12 +489,6 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
     ret
 }
 
-pub fn from_c_str(value: &[u8]) -> Cow<'_, str> {
-    let len = value.iter().position(|&c| c == 0).unwrap_or(value.len());
-
-    String::from_utf8_lossy(&value[..len])
-}
-
 fn load_overrides() -> Result<String, bool> {
     let config_path = match env::var_os("VGPU_UNLOCK_PROFILE_OVERRIDE_CONFIG_PATH") {
         Some(path) => PathBuf::from(path),
@@ -581,7 +575,7 @@ fn apply_profile_override<C: VgpuConfigLike>(
                 $value
             );
         };
-        ($target_field:ident, $preprocess:ident, $value:expr) => {
+        ($target_field:ident, $preprocess:expr, $value:expr) => {
             info!(
                 "Patching {}/{}: {} -> {}",
                 vgpu_type,
@@ -670,7 +664,7 @@ fn apply_profile_override<C: VgpuConfigLike>(
             if value_bytes.len() > config.$target_field().len() - 1 {
                 error_too_long!($target_field, $value);
             } else {
-                patch_msg!($target_field, from_c_str, $value);
+                patch_msg!($target_field, utils::from_c_str, $value);
 
                 // Zero out the field first.
                 // (`fill` was stabilized in Rust 1.50, but Debian Bullseye ships with 1.48)

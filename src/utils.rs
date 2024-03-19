@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt;
 
 #[cfg(feature = "proxmox")]
@@ -19,6 +20,12 @@ impl fmt::LowerHex for AlignedU64 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::LowerHex::fmt(&self.0, f)
     }
+}
+
+pub fn from_c_str(value: &[u8]) -> Cow<'_, str> {
+    let len = value.iter().position(|&c| c == 0).unwrap_or(value.len());
+
+    String::from_utf8_lossy(&value[..len])
 }
 
 /// Extracts the VMID from the last segment of a mdev uuid
