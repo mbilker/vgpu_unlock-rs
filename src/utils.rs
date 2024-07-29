@@ -36,8 +36,11 @@ pub fn from_c_str(value: &[u8]) -> Cow<'_, str> {
 /// All except the last segment must be zero
 #[cfg(feature = "proxmox")]
 pub fn uuid_to_vmid(uuid: Uuid) -> Option<u64> {
-    // Ensure that the first parts of the uuid are only 0
-    if uuid.0 != 0 || uuid.1 != 0 || uuid.2 != 0 || uuid.3[0] != 0 || uuid.3[1] != 0 {
+    // Following https://forum.proxmox.com/threads/automatically-assign-uuid-to-a-vgpu-instance.98994/#post-427480
+    //
+    // The format is `<HOST_PCI_INDEX>-0000-0000-0000-<VM_ID>`. Ensure the parts that should be
+    // zero are in fact zero.
+    if uuid.1 != 0 || uuid.2 != 0 || uuid.3[0] != 0 || uuid.3[1] != 0 {
         return None;
     }
 
