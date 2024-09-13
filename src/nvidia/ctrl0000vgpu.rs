@@ -42,3 +42,26 @@ mod test {
         assert_eq!(mem::size_of::<Nv0000CtrlVgpuGetStartDataParams>(), 0x420);
     }
 }
+
+pub const NV0000_CTRL_CMD_VGPU_CREATE_DEVICE: u32 = 0xc02;
+
+#[repr(C)]
+pub struct Nv0000CtrlVgpuCreateDeviceParams {
+    pub vgpu_name: Uuid,
+    pub gpu_pci_id: u32,
+    pub gpu_pci_bdf: u32,
+    pub vgpu_type_id: u32,
+    pub vgpu_id: u16,
+}
+
+impl fmt::Debug for Nv0000CtrlVgpuCreateDeviceParams {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Nv0000CtrlVgpuCreateDeviceParams")
+            .field("vgpu_name", &format_args!("{{{}}}", self.vgpu_name))
+            .field("gpu_pci_id", &HexFormat(&self.gpu_pci_id))
+            .field("gpu_pci_bdf", &self.gpu_pci_bdf)
+            .field("vgpu_type_id", &self.vgpu_type_id)
+            .field("vgpu_id", &self.vgpu_id)
+            .finish()
+    }
+}
