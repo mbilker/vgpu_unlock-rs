@@ -221,7 +221,6 @@ impl VgpuConfigLike for NvA081CtrlVgpuInfo {
     //impl_trait_fn!(vgpu_extra_params, [u8]);
 }
 
-#[derive(Debug)]
 #[derive(Deserialize)]
 struct ProfileOverridesConfig {
     #[serde(default)]
@@ -233,7 +232,6 @@ struct ProfileOverridesConfig {
     vm: HashMap<String, VgpuProfileOverride>,
 }
 
-#[derive(Debug)]
 #[derive(Deserialize)]
 struct VgpuProfileOverride {
     gpu_type: Option<u32>,
@@ -422,18 +420,17 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
 
     if io_data.status == NV_OK {
         match io_data.cmd {
-            NV0000_CTRL_CMD_VGPU_GET_START_DATA => {
+            NV0000_CTRL_CMD_VGPU_GET_START_DATA
                 if check_size!(
                     NV0000_CTRL_CMD_VGPU_GET_START_DATA,
                     Nv0000CtrlVgpuGetStartDataParams
-                )
-	            {
-        	        let config: &Nv0000CtrlVgpuGetStartDataParams = &*io_data.params.cast();
-	                info!("Nv0000CtrlVgpuGetStartDataParams: {:#?}", config);
+                ) =>
+	    {
+                let config: &Nv0000CtrlVgpuGetStartDataParams = &*io_data.params.cast();
+	        info!("Nv0000CtrlVgpuGetStartDataParams: {:#?}", config);
 
-                	*LAST_MDEV_UUID.lock() = Some(config.mdev_uuid);
-            	}
-	    }
+               	*LAST_MDEV_UUID.lock() = Some(config.mdev_uuid);
+            }
     	    NV0000_CTRL_CMD_VGPU_CREATE_DEVICE => {
 		// 17.0 driver provides mdev uuid as vgpu_name in this command
 		let params: &mut Nv0000CtrlVgpuCreateDeviceParams =
@@ -469,7 +466,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             {
                 let params: &mut NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams =
                     &mut *io_data.params.cast();
-                info!("082 params: {:#?}", params);
+                info!("NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams: {:#?}", params);
 
                 if !handle_profile_override(params) {
                     error!("Failed to apply profile override");
