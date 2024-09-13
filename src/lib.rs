@@ -40,8 +40,8 @@ use crate::config::Config;
 use crate::format::WideCharFormat;
 use crate::log::{error, info};
 use crate::nvidia::ctrl0000vgpu::{
-    Nv0000CtrlVgpuGetStartDataParams, NV0000_CTRL_CMD_VGPU_GET_START_DATA,
-    Nv0000CtrlVgpuCreateDeviceParams, NV0000_CTRL_CMD_VGPU_CREATE_DEVICE,
+    Nv0000CtrlVgpuCreateDeviceParams, Nv0000CtrlVgpuGetStartDataParams,
+    NV0000_CTRL_CMD_VGPU_CREATE_DEVICE, NV0000_CTRL_CMD_VGPU_GET_START_DATA,
 };
 use crate::nvidia::ctrl0080gpu::{
     Nv0080CtrlGpuGetVirtualizationModeParams, NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE,
@@ -425,20 +425,19 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                     NV0000_CTRL_CMD_VGPU_GET_START_DATA,
                     Nv0000CtrlVgpuGetStartDataParams
                 ) =>
-	    {
+            {
                 let config: &Nv0000CtrlVgpuGetStartDataParams = &*io_data.params.cast();
-	        info!("Nv0000CtrlVgpuGetStartDataParams: {:#?}", config);
+                info!("Nv0000CtrlVgpuGetStartDataParams: {:#?}", config);
 
-               	*LAST_MDEV_UUID.lock() = Some(config.mdev_uuid);
+                *LAST_MDEV_UUID.lock() = Some(config.mdev_uuid);
             }
-    	    NV0000_CTRL_CMD_VGPU_CREATE_DEVICE => {
-		// 17.0 driver provides mdev uuid as vgpu_name in this command
-		let params: &mut Nv0000CtrlVgpuCreateDeviceParams =
-                    &mut *io_data.params.cast();
-	        info!("Nv0000CtrlVgpuCreateDeviceParams: {:#?}", params);
+            NV0000_CTRL_CMD_VGPU_CREATE_DEVICE => {
+                // 17.0 driver provides mdev uuid as vgpu_name in this command
+                let params: &mut Nv0000CtrlVgpuCreateDeviceParams = &mut *io_data.params.cast();
+                info!("Nv0000CtrlVgpuCreateDeviceParams: {:#?}", params);
 
-              	*LAST_MDEV_UUID.lock() = Some(params.vgpu_name);
-	    }
+                *LAST_MDEV_UUID.lock() = Some(params.vgpu_name);
+            }
             NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO => {
                 // 17.0 driver sends larger struct with size 5096 bytes. Only extra members added at the end,
                 // nothing in between or changed, so accessing the larger struct is "safe"
@@ -466,7 +465,10 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             {
                 let params: &mut NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams =
                     &mut *io_data.params.cast();
-                info!("NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams: {:#?}", params);
+                info!(
+                    "NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams: {:#?}",
+                    params
+                );
 
                 if !handle_profile_override(params) {
                     error!("Failed to apply profile override");
@@ -545,9 +547,9 @@ fn handle_profile_override<C: VgpuConfigLike>(config: &mut C) -> bool {
     }
 
     if let Some(vmid) = mdev_uuid.and_then(uuid_to_vmid) {
-    	info!("vmid {}", vmid.to_string());
+        info!("vmid {}", vmid.to_string());
     } else {
-	info!("vmid is None");
+        info!("vmid is None");
     }
 
     if let Some(config_override) = config_overrides.profile.get(vgpu_type.as_str()) {
