@@ -31,18 +31,6 @@ impl fmt::Debug for Nv0000CtrlVgpuGetStartDataParams {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use std::mem;
-
-    use super::Nv0000CtrlVgpuGetStartDataParams;
-
-    #[test]
-    fn verify_sizes() {
-        assert_eq!(mem::size_of::<Nv0000CtrlVgpuGetStartDataParams>(), 0x420);
-    }
-}
-
 pub const NV0000_CTRL_CMD_VGPU_CREATE_DEVICE: u32 = 0xc02;
 
 #[repr(C)]
@@ -63,5 +51,19 @@ impl fmt::Debug for Nv0000CtrlVgpuCreateDeviceParams {
             .field("vgpu_type_id", &self.vgpu_type_id)
             .field("vgpu_id", &self.vgpu_id)
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::mem;
+
+    use super::Nv0000CtrlVgpuCreateDeviceParams;
+    use super::Nv0000CtrlVgpuGetStartDataParams;
+
+    #[test]
+    fn verify_sizes() {
+        assert_eq!(mem::size_of::<Nv0000CtrlVgpuGetStartDataParams>(), 0x420);
+        assert_eq!(mem::size_of::<Nv0000CtrlVgpuCreateDeviceParams>(), 0x20);
     }
 }
