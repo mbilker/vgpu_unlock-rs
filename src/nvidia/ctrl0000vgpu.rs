@@ -58,8 +58,7 @@ impl fmt::Debug for Nv0000CtrlVgpuCreateDeviceParams {
 mod test {
     use std::mem;
 
-    use super::Nv0000CtrlVgpuCreateDeviceParams;
-    use super::Nv0000CtrlVgpuGetStartDataParams;
+    use super::{Nv0000CtrlVgpuCreateDeviceParams, Nv0000CtrlVgpuGetStartDataParams};
 
     #[test]
     fn verify_sizes() {
