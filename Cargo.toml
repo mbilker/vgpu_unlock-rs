@@ -1,6 +1,6 @@
 [package]
 name = "vgpu_unlock-rs"
-version = "2.4.1"
+version = "2.5.0"
 edition = "2018"
 
 [lib]
