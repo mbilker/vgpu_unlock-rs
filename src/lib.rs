@@ -40,7 +40,8 @@ use crate::config::Config;
 use crate::format::WideCharFormat;
 use crate::log::{error, info};
 use crate::nvidia::ctrl0000vgpu::{
-    Nv0000CtrlVgpuGetStartDataParams, NV0000_CTRL_CMD_VGPU_GET_START_DATA,
+    Nv0000CtrlVgpuCreateDeviceParams, Nv0000CtrlVgpuGetStartDataParams,
+    NV0000_CTRL_CMD_VGPU_CREATE_DEVICE, NV0000_CTRL_CMD_VGPU_GET_START_DATA,
 };
 use crate::nvidia::ctrl0080gpu::{
     Nv0080CtrlGpuGetVirtualizationModeParams, NV0080_CTRL_CMD_GPU_GET_VIRTUALIZATION_MODE,
@@ -429,6 +430,18 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 info!("{:#?}", config);
 
                 *LAST_MDEV_UUID.lock() = Some(config.mdev_uuid);
+            }
+            NV0000_CTRL_CMD_VGPU_CREATE_DEVICE
+                if check_size!(
+                    NV0000_CTRL_CMD_VGPU_CREATE_DEVICE,
+                    Nv0000CtrlVgpuCreateDeviceParams
+                ) =>
+            {
+                // 17.0 driver provides mdev uuid as vgpu_name in this command
+                let params: &mut Nv0000CtrlVgpuCreateDeviceParams = &mut *io_data.params.cast();
+                info!("{:#?}", params);
+
+                *LAST_MDEV_UUID.lock() = Some(params.vgpu_name);
             }
             NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO => {
                 // 17.0 driver sends larger struct with size 5096 bytes. Only extra members added at the end,
