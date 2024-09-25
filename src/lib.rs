@@ -539,7 +539,7 @@ fn handle_profile_override<C: VgpuConfigLike>(config: &mut C) -> bool {
     };
 
     let vgpu_type = format!("nvidia-{}", config.vgpu_type());
-    let mdev_uuid = LAST_MDEV_UUID.lock().take();
+    let mdev_uuid = LAST_MDEV_UUID.lock().clone();
 
     if let Some(config_override) = config_overrides.profile.get(vgpu_type.as_str()) {
         info!("Applying profile {} overrides", vgpu_type);
