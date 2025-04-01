@@ -444,9 +444,10 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 *LAST_MDEV_UUID.lock() = Some(params.vgpu_name);
             }
             NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO => {
-                // 17.0 driver sends larger struct with size 5096 bytes. Only extra members added at the end,
+                // 18.0 driver sends larger struct with size 5232 bytes, 17.0 driver sends larger struct with size 5096 bytes. Only extra members added at the end,
                 // nothing in between or changed, so accessing the larger struct is "safe"
-                if io_data.params_size == 5096
+                if io_data.params_size == 5232
+                    || io_data.params_size == 5096
                     || check_size!(
                         NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
                         NvA081CtrlVgpuConfigGetVgpuTypeInfoParams
