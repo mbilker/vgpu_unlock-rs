@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build dev & Test
+      run: |
+        cargo build --verbose
+        cargo test --verbose
+    - name: Build release
+      run: cargo build --release
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: release
+        path: target/release
