@@ -54,7 +54,7 @@ pub struct NvA081CtrlVgpuInfo {
     pub exclusive_size: u32,
     pub gpu_instance_profile_id: u32,
     // R550 adds additional fields, leave them out for now for backwards compat with 16.x
-    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/550/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L122-L124
+    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/550/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L126-L128
     // pub placement_size: u32,
     // pub placement_count: u32,
     // pub placement_ids: [u32; NVA081_MAX_VGPU_PER_PGPU],
