@@ -40,6 +40,11 @@ pub struct Nv0000CtrlVgpuCreateDeviceParams {
     pub gpu_pci_bdf: u32,
     pub vgpu_type_id: u32,
     pub vgpu_id: u16,
+    // R570 adds additional fields, leave them out for now for backwards compat with 16.x and 17.x
+    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/570/src/common/sdk/nvidia/inc/ctrl/ctrl0000/ctrl0000vgpu.h#L94-L95
+    //
+    // pub gpuInstanceId: u32,
+    // pub placementId: u32,
 }
 
 impl fmt::Debug for Nv0000CtrlVgpuCreateDeviceParams {
