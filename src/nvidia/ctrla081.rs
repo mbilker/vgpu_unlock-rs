@@ -55,9 +55,18 @@ pub struct NvA081CtrlVgpuInfo {
     pub gpu_instance_profile_id: u32,
     // R550 adds additional fields, leave them out for now for backwards compat with 16.x
     // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/550/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L126-L128
+    // R570 rename these fields
+    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/570/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L126-L128
+    //
     // pub placement_size: u32,
-    // pub placement_count: u32,
-    // pub placement_ids: [u32; NVA081_MAX_VGPU_PER_PGPU],
+    // pub homogeneousPlacementCount: u32, // pub placement_count: u32,
+    // pub homogeneousPlacementIds: [u32; NVA081_MAX_VGPU_PER_PGPU], // pub placement_ids: [u32; NVA081_MAX_VGPU_PER_PGPU],
+    //
+    // R570 adds additional fields, leave them out for now for backwards compat with 16.x and 17.x
+    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/570/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L129-L130
+    //
+    // pub heterogeneousPlacementCount: u32,
+    // pub heterogeneousPlacementIds: [u32; NVA081_MAX_VGPU_PER_PGPU],
 }
 
 pub const NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO: u32 = 0xa0810103;
