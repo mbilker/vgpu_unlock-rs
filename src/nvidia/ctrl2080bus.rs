@@ -1,4 +1,4 @@
-///! Sourced from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/5f40a5aee5ef9c92085836bf5b5a9056174f07f1/src/common/sdk/nvidia/inc/ctrl/ctrl2080/ctrl2080bus.h
+///! Sourced from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/307159f2623d3bf45feb9177bd2da52ffbc5ddf9/src/common/sdk/nvidia/inc/ctrl/ctrl2080/ctrl2080bus.h
 
 pub const NV2080_CTRL_CMD_BUS_GET_PCI_INFO: u32 = 0x20801801;
 

@@ -5,12 +5,12 @@ use crate::format::{CStrFormat, HexFormat, HexFormatSlice, WideCharFormat};
 /// Inferred based on `NVA082_CTRL_CMD_HOST_VGPU_DEVICE_GET_VGPU_TYPE_INFO_PARAMS`
 pub const NVA082_CTRL_CMD_HOST_VGPU_DEVICE_GET_VGPU_TYPE_INFO: u32 = 0xa0820102;
 
-/// Pulled from a comment in [`NVA081_CTRL_VGPU_INFO`](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/758b4ee8189c5198504cb1c3c5bc29027a9118a3/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L82)
+/// Pulled from a comment in [`NVA081_CTRL_VGPU_INFO`](https://github.com/NVIDIA/open-gpu-kernel-modules/blob/307159f2623d3bf45feb9177bd2da52ffbc5ddf9/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L89)
 #[repr(C)]
 pub struct NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     pub vgpu_type: u32,
-    pub vgpu_name: [u8; 32],
-    pub vgpu_class: [u8; 32],
+    pub vgpu_name: [u8; 64],
+    pub vgpu_class: [u8; 64],
     pub vgpu_signature: [u8; 128],
     pub license: [u8; 128],
     pub max_instance: u32,
@@ -21,9 +21,7 @@ pub struct NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     pub frl_config: u32,
     pub cuda_enabled: u32,
     pub ecc_supported: u32,
-    // This field might not exist anymore and instead the space became padding as
-    // `NVA081_CTRL_VGPU_INFO` forces the alignment of `vdevId` to `8`.
-    pub mig_instance_size: u32,
+    pub gpu_instance_size: u32,
     pub multi_vgpu_supported: u32,
     pub vdev_id: u64,
     pub pdev_id: u64,
@@ -38,7 +36,19 @@ pub struct NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     pub short_gpu_name_string: [u8; 64],
     pub licensed_product_name: [u8; 128],
     pub vgpu_extra_params: [u8; 1024],
-    unknown_end: [u8; 8],
+    pub ftrace_enable: u32,
+    pub gpu_direct_supported: u32,
+    pub nvlink_p2p_supported: u32,
+    pub max_instance_per_gi: u32,
+    pub multi_vgpu_exclusive: u32,
+    pub exclusive_type: u32,
+    pub exclusive_size: u32,
+    pub gpu_instance_profile_id: u32,
+    pub placement_size: u32,
+    pub homogeneous_placement_count: u32,
+    pub homogeneous_placement_ids: [u32; 48],
+    pub heterogeneous_placemen_count: u32,
+    pub heterogeneous_placement_ids: [u32; 48],
 }
 
 impl fmt::Debug for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
@@ -68,7 +78,7 @@ impl fmt::Debug for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
             .field("frl_config", &self.frl_config)
             .field("cuda_enabled", &self.cuda_enabled)
             .field("ecc_supported", &self.ecc_supported)
-            .field("mig_instance_size", &self.mig_instance_size)
+            .field("gpu_instance_size", &self.gpu_instance_size)
             .field("multi_vgpu_supported", &self.multi_vgpu_supported)
             .field("vdev_id", &HexFormat(self.vdev_id))
             .field("pdev_id", &HexFormat(self.pdev_id))
@@ -106,7 +116,7 @@ mod test {
     fn verify_sizes() {
         assert_eq!(
             mem::size_of::<NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams>(),
-            0x738
+            0x918
         );
     }
 }

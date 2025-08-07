@@ -1,4 +1,4 @@
-///! Sourced from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/758b4ee8189c5198504cb1c3c5bc29027a9118a3/src/common/sdk/nvidia/inc/ctrl/ctrl0000/ctrl0000vgpu.h
+///! Sourced from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/307159f2623d3bf45feb9177bd2da52ffbc5ddf9/src/common/sdk/nvidia/inc/ctrl/ctrl0000/ctrl0000vgpu.h
 use std::fmt;
 
 use crate::format::{CStrFormat, HexFormat};
@@ -40,11 +40,8 @@ pub struct Nv0000CtrlVgpuCreateDeviceParams {
     pub gpu_pci_bdf: u32,
     pub vgpu_type_id: u32,
     pub vgpu_id: u16,
-    // R570 adds additional fields, leave them out for now for backwards compat with 16.x and 17.x
-    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/570/src/common/sdk/nvidia/inc/ctrl/ctrl0000/ctrl0000vgpu.h#L94-L95
-    //
-    // pub gpuInstanceId: u32,
-    // pub placementId: u32,
+    pub gpu_instance_id: u32,
+    pub placement_id: u32,
 }
 
 impl fmt::Debug for Nv0000CtrlVgpuCreateDeviceParams {
@@ -68,6 +65,6 @@ mod test {
     #[test]
     fn verify_sizes() {
         assert_eq!(mem::size_of::<Nv0000CtrlVgpuGetStartDataParams>(), 0x420);
-        assert_eq!(mem::size_of::<Nv0000CtrlVgpuCreateDeviceParams>(), 0x20);
+        assert_eq!(mem::size_of::<Nv0000CtrlVgpuCreateDeviceParams>(), 0x28);
     }
 }

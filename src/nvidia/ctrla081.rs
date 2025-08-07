@@ -1,16 +1,16 @@
-///! Sourced from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/758b4ee8189c5198504cb1c3c5bc29027a9118a3/src/common/sdk/nvidia/inc/ctrl/ctrla081.h
+///! Sourced from https://github.com/NVIDIA/open-gpu-kernel-modules/blob/307159f2623d3bf45feb9177bd2da52ffbc5ddf9/src/common/sdk/nvidia/inc/ctrl/ctrla081.h
 use std::fmt;
 
 use super::ctrl2080gpu::{NV2080_GPU_MAX_NAME_STRING_LENGTH, NV_GRID_LICENSE_INFO_MAX_LENGTH};
 use crate::format::{CStrFormat, HexFormat, HexFormatSlice, WideCharFormat};
 use crate::utils::AlignedU64;
 
-pub const NVA081_VGPU_STRING_BUFFER_SIZE: usize = 32;
+pub const NVA081_VGPU_STRING_BUFFER_SIZE: usize = 64;
 pub const NVA081_VGPU_SIGNATURE_SIZE: usize = 128;
 
 pub const NVA081_EXTRA_PARAMETERS_SIZE: usize = 1024;
 
-// pub const NVA081_MAX_VGPU_PER_PGPU: usize = 32;
+pub const NVA081_MAX_VGPU_PER_PGPU: usize = 48;
 
 /// See `NVA081_CTRL_VGPU_CONFIG_INFO`
 // Set `align(8)` for `NVA081_CTRL_VGPU_CONFIG_GET_VGPU_TYPE_INFO_PARAMS`
@@ -49,24 +49,16 @@ pub struct NvA081CtrlVgpuInfo {
     pub ftrace_enable: u32,
     pub gpu_direct_supported: u32,
     pub nvlink_p2p_supported: u32,
+    pub max_instance_per_gi: u32,
     pub multi_vgpu_exclusive: u32,
     pub exclusive_type: u32,
     pub exclusive_size: u32,
     pub gpu_instance_profile_id: u32,
-    // R550 adds additional fields, leave them out for now for backwards compat with 16.x
-    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/550/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L126-L128
-    // R570 rename these fields
-    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/570/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L126-L128
-    //
-    // pub placement_size: u32,
-    // pub homogeneousPlacementCount: u32, // pub placement_count: u32,
-    // pub homogeneousPlacementIds: [u32; NVA081_MAX_VGPU_PER_PGPU], // pub placement_ids: [u32; NVA081_MAX_VGPU_PER_PGPU],
-    //
-    // R570 adds additional fields, leave them out for now for backwards compat with 16.x and 17.x
-    // https://github.com/NVIDIA/open-gpu-kernel-modules/blob/570/src/common/sdk/nvidia/inc/ctrl/ctrla081.h#L129-L130
-    //
-    // pub heterogeneousPlacementCount: u32,
-    // pub heterogeneousPlacementIds: [u32; NVA081_MAX_VGPU_PER_PGPU],
+    pub placement_size: u32,
+    pub homogeneous_placement_count: u32,
+    pub homogeneous_placement_ids: [u32; NVA081_MAX_VGPU_PER_PGPU],
+    pub heterogeneous_placemen_count: u32,
+    pub heterogeneous_placement_ids: [u32; NVA081_MAX_VGPU_PER_PGPU],
 }
 
 pub const NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO: u32 = 0xa0810103;
@@ -169,10 +161,10 @@ mod test {
 
     #[test]
     fn verify_sizes() {
-        assert_eq!(mem::size_of::<NvA081CtrlVgpuInfo>(), 0x1358);
+        assert_eq!(mem::size_of::<NvA081CtrlVgpuInfo>(), 0x1528);
         assert_eq!(
             mem::size_of::<NvA081CtrlVgpuConfigGetVgpuTypeInfoParams>(),
-            0x1360
+            0x1530
         );
     }
 }
