@@ -362,12 +362,18 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 // Maxwell 2.0
                 0x13c0..=0x1436 | 0x1617..=0x1667 | 0x17c2..=0x17fd => {
                     // Tesla M60
-                    (0x13f2, actual_sub_system_id)
+                    // (0x13f2, actual_sub_system_id)
+                    
+                    // Tesla T4
+                    (0x1eb8, 0x12a2)
                 }
                 // Pascal
                 0x15f0 | 0x15f1 | 0x1b00..=0x1d56 | 0x1725..=0x172f => {
                     // Tesla P40
-                    (0x1b38, actual_sub_system_id)
+                    // (0x1b38, actual_sub_system_id)
+
+                    // Tesla T4
+                    (0x1eb8, 0x12a2)
                 }
                 // GV100 Volta
                 //
