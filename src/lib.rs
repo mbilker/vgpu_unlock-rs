@@ -51,9 +51,9 @@ use crate::nvidia::ctrl2080bus::{Nv2080CtrlBusGetPciInfoParams, NV2080_CTRL_CMD_
 use crate::nvidia::ctrl2080gpu::NV2080_CTRL_CMD_GPU_GET_INFOROM_OBJECT_VERSION;
 use crate::nvidia::ctrl9096::NV9096_CTRL_CMD_GET_ZBC_CLEAR_TABLE;
 use crate::nvidia::ctrla081::{
-    NvA081CtrlCmdVgpuConfigGetMigrationCapParams, NvA081CtrlVgpuConfigGetVgpuTypeInfoParams,
-    NvA081CtrlVgpuInfo, NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_CAP,
-    NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
+    NvA081CtrlCmdVgpuConfigGetMigrationCapParams, NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV525,
+    NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580, NvA081CtrlVgpuInfoV525, NvA081CtrlVgpuInfoV580,
+    NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_CAP, NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
 };
 use crate::nvidia::ctrla082::{
     NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams,
@@ -95,8 +95,8 @@ const DEFAULT_PROFILE_OVERRIDE_CONFIG_PATH: &str = "/etc/vgpu_unlock/profile_ove
 
 trait VgpuConfigLike {
     fn vgpu_type(&mut self) -> &mut u32;
-    fn vgpu_name(&mut self) -> &mut [u8; 32];
-    fn vgpu_class(&mut self) -> &mut [u8; 32];
+    fn vgpu_name(&mut self) -> &mut [u8];
+    fn vgpu_class(&mut self) -> &mut [u8];
     //fn vgpu_signature(&mut self) -> &mut [u8; 128];
     fn license(&mut self) -> &mut [u8; 128];
     fn max_instance(&mut self) -> &mut u32;
@@ -126,6 +126,11 @@ trait VgpuConfigLike {
 }
 
 macro_rules! impl_trait_fn {
+    ($field:ident, [$t:ty; ..]) => {
+        fn $field(&mut self) -> &mut [$t] {
+            &mut self.$field[..]
+        }
+    };
     ($field:ident, $t:ty) => {
         fn $field(&mut self) -> &mut $t {
             &mut self.$field
@@ -147,8 +152,8 @@ macro_rules! impl_trait_fn_aligned {
 
 impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     impl_trait_fn!(vgpu_type, u32);
-    impl_trait_fn!(vgpu_name, [u8; 32]);
-    impl_trait_fn!(vgpu_class, [u8; 32]);
+    impl_trait_fn!(vgpu_name, [u8; ..]);
+    impl_trait_fn!(vgpu_class, [u8; ..]);
     //impl_trait_fn!(vgpu_signature, [u8; 128]);
     impl_trait_fn!(license, [u8; 128]);
     impl_trait_fn!(max_instance, u32);
@@ -183,10 +188,48 @@ impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParams {
     //impl_trait_fn!(vgpu_extra_params, [u8]);
 }
 
-impl VgpuConfigLike for NvA081CtrlVgpuInfo {
+impl VgpuConfigLike for NvA081CtrlVgpuInfoV525 {
     impl_trait_fn!(vgpu_type, u32);
-    impl_trait_fn!(vgpu_name, [u8; 32]);
-    impl_trait_fn!(vgpu_class, [u8; 32]);
+    impl_trait_fn!(vgpu_name, [u8; ..]);
+    impl_trait_fn!(vgpu_class, [u8; ..]);
+    //impl_trait_fn!(vgpu_signature, [u8; 128]);
+    impl_trait_fn!(license, [u8; 128]);
+    impl_trait_fn!(max_instance, u32);
+    impl_trait_fn!(num_heads, u32);
+    impl_trait_fn!(max_resolution_x, u32);
+    impl_trait_fn!(max_resolution_y, u32);
+    impl_trait_fn!(max_pixels, u32);
+    impl_trait_fn!(frl_config, u32);
+    impl_trait_fn!(cuda_enabled, u32);
+    impl_trait_fn!(ecc_supported, u32);
+    impl_trait_fn!(gpu_instance_size => mig_instance_size, u32);
+    impl_trait_fn!(multi_vgpu_supported, u32);
+    impl_trait_fn_aligned!(vdev_id, u64);
+    impl_trait_fn_aligned!(pdev_id, u64);
+
+    /*
+    fn profile_size(&mut self) -> Option<&mut u64> {
+        Some(&mut self.profile_size.0)
+    }
+    */
+
+    impl_trait_fn_aligned!(fb_length, u64);
+    impl_trait_fn_aligned!(mappable_video_size, u64);
+    impl_trait_fn_aligned!(fb_reservation, u64);
+    impl_trait_fn!(encoder_capacity, u32);
+    impl_trait_fn_aligned!(bar1_length, u64);
+    impl_trait_fn!(frl_enable, u32);
+    impl_trait_fn!(adapter_name, [u8; 64]);
+    impl_trait_fn!(adapter_name_unicode, [u16; 64]);
+    impl_trait_fn!(short_gpu_name_string, [u8; 64]);
+    impl_trait_fn!(licensed_product_name, [u8; 128]);
+    //impl_trait_fn!(vgpu_extra_params, [u8]);
+}
+
+impl VgpuConfigLike for NvA081CtrlVgpuInfoV580 {
+    impl_trait_fn!(vgpu_type, u32);
+    impl_trait_fn!(vgpu_name, [u8; ..]);
+    impl_trait_fn!(vgpu_class, [u8; ..]);
     //impl_trait_fn!(vgpu_signature, [u8; 128]);
     impl_trait_fn!(license, [u8; 128]);
     impl_trait_fn!(max_instance, u32);
@@ -264,17 +307,34 @@ struct VgpuProfileOverride {
     license_type: Option<String>,
 }
 
+fn check_size_log(name: &str, actual_size: usize, expected_size: usize) {
+    error!("Parameters size for {name} was {actual_size} bytes, expected {expected_size} bytes");
+}
+
+fn check_size_multiple_log(name: &str, actual_size: usize, expected_size: &[usize]) {
+    error!("Parameters size for {name} was {actual_size} bytes, expected one of {expected_size:?} bytes");
+}
+
 fn check_size(name: &str, actual_size: usize, expected_size: usize) -> bool {
     if actual_size != expected_size {
-        error!(
-            "Parameters size for {} was {} bytes, expected {} bytes",
-            name, actual_size, expected_size
-        );
+        check_size_log(name, actual_size, expected_size);
 
         false
     } else {
         true
     }
+}
+
+#[inline(always)]
+fn check_size_raw(actual_size: usize, expected_size: usize) -> bool {
+    actual_size == expected_size
+}
+
+#[inline(always)]
+fn check_size_raw_multiple(actual_size: usize, expected_size: &[usize]) -> bool {
+    expected_size
+        .iter()
+        .any(|&expected_size| actual_size == expected_size)
 }
 
 /// # Safety
@@ -336,6 +396,39 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 $expected_size,
             )
         };
+    }
+    macro_rules! check_size_raw {
+        ($expected_type:ty) => {
+            check_size_raw(
+                io_data.params_size as usize,
+                mem::size_of::<$expected_type>(),
+            )
+        };
+        ($expected_type:ty, other: [$($expected_size:expr),* $(,)?]) => {
+            check_size_raw_multiple(
+                io_data.params_size as usize,
+                &[
+                    mem::size_of::<$expected_type>(),
+                    $($expected_size,)*
+                ],
+            )
+        };
+    }
+    macro_rules! check_size_log {
+        (
+            name: $name:ident,
+            types: [$($expected_type:ty),* $(,)?],
+            other: [$($expected_size:expr),* $(,)?] $(,)?
+        ) => {
+            check_size_multiple_log(
+                stringify!($name),
+                io_data.params_size as usize,
+                &[
+                    $(mem::size_of::<$expected_type>(),)*
+                    $($expected_size,)*
+                ],
+            )
+        }
     }
 
     match io_data.cmd {
@@ -450,16 +543,16 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                 *LAST_MDEV_UUID.lock() = Some(params.vgpu_name);
             }
             NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO => {
-                // 18.0 driver sends larger struct with size 5232 bytes, 17.0 driver sends larger struct with size 5096 bytes. Only extra members added at the end,
-                // nothing in between or changed, so accessing the larger struct is "safe"
-                if io_data.params_size == 5232
-                    || io_data.params_size == 5096
-                    || check_size!(
-                        NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
-                        NvA081CtrlVgpuConfigGetVgpuTypeInfoParams
+                if
+                    // 18.0 driver sends larger struct with size 5232 bytes, 17.0 driver sends a
+                    // larger struct with size 5096 bytes. Only extra members added at the end,
+                    // nothing earlier changed in the structure, so accessing the struct is "safe".
+                    check_size_raw!(
+                        NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV525,
+                        other: [5232, 5096]
                     )
                 {
-                    let params: &mut NvA081CtrlVgpuConfigGetVgpuTypeInfoParams =
+                    let params: &mut NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV525 =
                         &mut *io_data.params.cast();
                     info!("{:#?}", params);
 
@@ -467,6 +560,29 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                         error!("Failed to apply profile override");
                         return -1;
                     }
+                } else if
+                    // 19.0 driver sends much larger structure than 18.x and prior with expanded
+                    // fields. This necessitated a separate structure as it was no longer
+                    // backwards compatible.
+                    check_size_raw!(NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580)
+                {
+                    let params: &mut NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580 =
+                        &mut *io_data.params.cast();
+                    info!("{:#?}", params);
+
+                    if !handle_profile_override(&mut params.vgpu_type_info) {
+                        error!("Failed to apply profile override");
+                        return -1;
+                    }
+                } else {
+                    check_size_log! {
+                        name: NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
+                        types: [
+                            NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV525,
+                            NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580,
+                        ],
+                        other: [5232, 5096],
+                    };
                 }
             }
             NVA082_CTRL_CMD_HOST_VGPU_DEVICE_GET_VGPU_TYPE_INFO
