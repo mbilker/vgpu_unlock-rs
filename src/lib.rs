@@ -490,11 +490,8 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             let actual_device_id = (orig_device_id & 0xffff0000) >> 16;
             let actual_sub_system_id = (orig_sub_system_id & 0xffff0000) >> 16;
 
-            let (spoofed_devid, spoofed_subsysid) = if let Some(mapped_id) = mapped_id {
-                let device_id = (mapped_id & 0xffff0000) >> 16;
-                let sub_system_id = mapped_id & 0xffff;
-
-                (device_id, sub_system_id)
+            let (spoofed_devid, spoofed_subsysid) = if let Some(mapping) = mapped_id {
+                (mapping.device_id as u32, mapping.sub_system_id as u32)
             } else {
                 match actual_device_id {
                     // Maxwell

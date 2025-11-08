@@ -25,7 +25,13 @@ pub struct Config {
     #[serde(default = "Defaults::unlock_migration")]
     pub unlock_migration: bool,
     #[serde(default)]
-    pub pci_info_map: Option<HashMap<u32, u32>>,
+    pub pci_info_map: Option<HashMap<u32, PciInfoMapEntry>>,
+}
+
+#[derive(Deserialize)]
+pub struct PciInfoMapEntry {
+    pub device_id: u16,
+    pub sub_system_id: u16,
 }
 
 impl Default for Config {
