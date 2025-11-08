@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MIT
 
+use std::collections::HashMap;
+
 use serde::Deserialize;
 
 struct Defaults;
@@ -22,6 +24,8 @@ pub struct Config {
     pub unlock: bool,
     #[serde(default = "Defaults::unlock_migration")]
     pub unlock_migration: bool,
+    #[serde(default)]
+    pub pci_info_map: Option<HashMap<u32, u32>>,
 }
 
 impl Default for Config {
@@ -30,6 +34,7 @@ impl Default for Config {
         Self {
             unlock: Defaults::unlock(),
             unlock_migration: Defaults::unlock_migration(),
+            pci_info_map: None,
         }
     }
 }

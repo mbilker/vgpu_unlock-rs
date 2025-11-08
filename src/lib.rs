@@ -482,44 +482,56 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             let orig_device_id = params.pci_device_id;
             let orig_sub_system_id = params.pci_sub_system_id;
 
+            let mapped_id = CONFIG
+                .pci_info_map
+                .as_ref()
+                .and_then(|pci_info_map| pci_info_map.get(&orig_device_id));
+
             let actual_device_id = (orig_device_id & 0xffff0000) >> 16;
             let actual_sub_system_id = (orig_sub_system_id & 0xffff0000) >> 16;
 
-            let (spoofed_devid, spoofed_subsysid) = match actual_device_id {
-                // Maxwell
-                0x1340..=0x13bd | 0x174d..=0x179c => {
-                    // Tesla M10
-                    (0x13bd, 0x1160)
+            let (spoofed_devid, spoofed_subsysid) = if let Some(mapped_id) = mapped_id {
+                let device_id = (mapped_id & 0xffff0000) >> 16;
+                let sub_system_id = mapped_id & 0xffff;
+
+                (device_id, sub_system_id)
+            } else {
+                match actual_device_id {
+                    // Maxwell
+                    0x1340..=0x13bd | 0x174d..=0x179c => {
+                        // Tesla M10
+                        (0x13bd, 0x1160)
+                    }
+                    // Maxwell 2.0
+                    0x13c0..=0x1436 | 0x1617..=0x1667 | 0x17c2..=0x17fd => {
+                        // Tesla M60
+                        (0x13f2, actual_sub_system_id)
+                    }
+                    // Pascal
+                    0x15f0 | 0x15f1 | 0x1b00..=0x1d56 | 0x1725..=0x172f => {
+                        // Tesla P40
+                        (0x1b38, actual_sub_system_id)
+                    }
+                    // GV100 Volta
+                    //
+                    // 0x1d81 = TITAN V
+                    // 0x1dba = Quadro GV100 32GB
+                    0x1d81 | 0x1dba => {
+                        // Tesla V100 32GB PCIE
+                        (0x1db6, actual_sub_system_id)
+                    }
+                    // Turing
+                    0x1e02..=0x1ff9 | 0x2182..=0x21d1 => {
+                        // Quadro RTX 6000
+                        (0x1e30, 0x12ba)
+                    }
+                    // Ampere
+                    0x2200..=0x2600 => {
+                        // RTX A6000
+                        (0x2230, actual_sub_system_id)
+                    }
+                    _ => (actual_device_id, actual_sub_system_id),
                 }
-                // Maxwell 2.0
-                0x13c0..=0x1436 | 0x1617..=0x1667 | 0x17c2..=0x17fd => {
-                    // Tesla M60
-                    (0x13f2, actual_sub_system_id)
-                }
-                // Pascal
-                0x15f0 | 0x15f1 | 0x1b00..=0x1d56 | 0x1725..=0x172f => {
-                    // Tesla P40
-                    (0x1b38, actual_sub_system_id)
-                }
-                // GV100 Volta
-                //
-                // 0x1d81 = TITAN V
-                // 0x1dba = Quadro GV100 32GB
-                0x1d81 | 0x1dba => {
-                    // Tesla V100 32GB PCIE
-                    (0x1db6, actual_sub_system_id)
-                }
-                // Turing
-                0x1e02..=0x1ff9 | 0x2182..=0x21d1 => {
-                    // Quadro RTX 6000
-                    (0x1e30, 0x12ba)
-                }
-                // Ampere
-                0x2200..=0x2600 => {
-                    // RTX A6000
-                    (0x2230, actual_sub_system_id)
-                }
-                _ => (actual_device_id, actual_sub_system_id),
             };
 
             params.pci_device_id = (orig_device_id & 0xffff) | (spoofed_devid << 16);
