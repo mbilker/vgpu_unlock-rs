@@ -76,7 +76,11 @@ static LAST_MDEV_UUID: Mutex<Option<Uuid>> = parking_lot::const_mutex(None);
 static CONFIG: Config = {
     match fs::read_to_string(DEFAULT_CONFIG_PATH) {
         Ok(config) => match toml::from_str::<Config>(&config) {
-            Ok(config) => config,
+            Ok(config) => {
+                println!("{:?}", config);
+
+                config
+            }
             Err(e) => {
                 eprintln!("Failed to decode config: {}", e);
 

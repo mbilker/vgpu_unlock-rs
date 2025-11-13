@@ -20,7 +20,7 @@ impl Defaults {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
     #[serde(default = "Defaults::unlock")]
     pub unlock: bool,
@@ -30,7 +30,7 @@ pub struct Config {
     pub pci_info_map: Option<HashMap<U32, PciInfoMapEntry>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct PciInfoMapEntry {
     pub device_id: u16,
     pub sub_system_id: u16,

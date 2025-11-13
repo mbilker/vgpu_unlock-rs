@@ -33,7 +33,8 @@ impl<'de> Deserialize<'de> for U32 {
                 match u32::from_str_radix(v, radix) {
                     Ok(n) => Ok(Self(n)),
                     Err(e) => Err(D::Error::custom(format!(
-                        "Failed to parse string as base-{radix} integer: {e}"
+                        "Failed to parse string as base-{} integer: {}",
+                        radix, e
                     ))),
                 }
             }
