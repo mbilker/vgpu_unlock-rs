@@ -488,13 +488,13 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             let orig_device_id = params.pci_device_id;
             let orig_sub_system_id = params.pci_sub_system_id;
 
+            let actual_device_id = (orig_device_id & 0xffff0000) >> 16;
+            let actual_sub_system_id = (orig_sub_system_id & 0xffff0000) >> 16;
+
             let mapped_id = CONFIG
                 .pci_info_map
                 .as_ref()
-                .and_then(|pci_info_map| pci_info_map.get(&U32(orig_device_id)));
-
-            let actual_device_id = (orig_device_id & 0xffff0000) >> 16;
-            let actual_sub_system_id = (orig_sub_system_id & 0xffff0000) >> 16;
+                .and_then(|pci_info_map| pci_info_map.get(&U32(actual_device_id)));
 
             let (spoofed_devid, spoofed_subsysid) = if let Some(mapping) = mapped_id {
                 (mapping.device_id as u32, mapping.sub_system_id as u32)
