@@ -4,6 +4,8 @@ use std::collections::HashMap;
 
 use serde::Deserialize;
 
+use crate::string_number::U32;
+
 struct Defaults;
 
 impl Defaults {
@@ -25,7 +27,7 @@ pub struct Config {
     #[serde(default = "Defaults::unlock_migration")]
     pub unlock_migration: bool,
     #[serde(default)]
-    pub pci_info_map: Option<HashMap<u32, PciInfoMapEntry>>,
+    pub pci_info_map: Option<HashMap<U32, PciInfoMapEntry>>,
 }
 
 #[derive(Deserialize)]

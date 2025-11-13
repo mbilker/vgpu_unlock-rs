@@ -32,6 +32,7 @@ mod human_number;
 mod ioctl;
 mod log;
 mod nvidia;
+mod string_number;
 mod to_bytes;
 mod utils;
 mod uuid;
@@ -64,6 +65,7 @@ use crate::nvidia::error::{
     NV_ERR_BUSY_RETRY, NV_ERR_NOT_SUPPORTED, NV_ERR_OBJECT_NOT_FOUND, NV_OK,
 };
 use crate::nvidia::nvos::{Nvos54Parameters, NV_ESC_RM_CONTROL};
+use crate::string_number::U32;
 #[cfg(feature = "proxmox")]
 use crate::utils::uuid_to_vmid;
 use crate::uuid::Uuid;
@@ -485,7 +487,7 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
             let mapped_id = CONFIG
                 .pci_info_map
                 .as_ref()
-                .and_then(|pci_info_map| pci_info_map.get(&orig_device_id));
+                .and_then(|pci_info_map| pci_info_map.get(&U32(orig_device_id)));
 
             let actual_device_id = (orig_device_id & 0xffff0000) >> 16;
             let actual_sub_system_id = (orig_sub_system_id & 0xffff0000) >> 16;
