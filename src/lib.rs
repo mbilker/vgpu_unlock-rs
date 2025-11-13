@@ -77,7 +77,7 @@ static CONFIG: Config = {
     match fs::read_to_string(DEFAULT_CONFIG_PATH) {
         Ok(config) => match toml::from_str::<Config>(&config) {
             Ok(config) => {
-                println!("{:?}", config);
+                println!("{:#x?}", config);
 
                 config
             }
@@ -353,11 +353,17 @@ struct VgpuProfileOverride {
 }
 
 fn check_size_log(name: &str, actual_size: usize, expected_size: usize) {
-    error!("Parameters size for {name} was {actual_size} bytes, expected {expected_size} bytes");
+    error!(
+        "Parameters size for {} was {} bytes, expected {} bytes",
+        name, actual_size, expected_size
+    );
 }
 
 fn check_size_multiple_log(name: &str, actual_size: usize, expected_size: &[usize]) {
-    error!("Parameters size for {name} was {actual_size} bytes, expected one of {expected_size:?} bytes");
+    error!(
+        "Parameters size for {} was {} bytes, expected one of {:?} bytes",
+        name, actual_size, expected_size
+    );
 }
 
 fn check_size(name: &str, actual_size: usize, expected_size: usize) -> bool {
