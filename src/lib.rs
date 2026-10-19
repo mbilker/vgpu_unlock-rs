@@ -53,12 +53,15 @@ use crate::nvidia::ctrl2080gpu::NV2080_CTRL_CMD_GPU_GET_INFOROM_OBJECT_VERSION;
 use crate::nvidia::ctrl9096::NV9096_CTRL_CMD_GET_ZBC_CLEAR_TABLE;
 use crate::nvidia::ctrla081::{
     NvA081CtrlCmdVgpuConfigGetMigrationCapParams, NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV525,
-    NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580, NvA081CtrlVgpuInfoV525, NvA081CtrlVgpuInfoV580,
+    NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580,
+    NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580_95, NvA081CtrlVgpuInfoV525,
+    NvA081CtrlVgpuInfoV580, NvA081CtrlVgpuInfoV580_95,
     NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_CAP, NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
 };
 use crate::nvidia::ctrla082::{
     NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV525,
     NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580,
+    NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580_95,
     NVA082_CTRL_CMD_HOST_VGPU_DEVICE_GET_VGPU_TYPE_INFO,
 };
 use crate::nvidia::error::{
@@ -233,6 +236,44 @@ impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580 {
     //impl_trait_fn!(vgpu_extra_params, [u8]);
 }
 
+impl VgpuConfigLike for NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580_95 {
+    impl_trait_fn!(vgpu_type, u32);
+    impl_trait_fn!(vgpu_name, [u8; ..]);
+    impl_trait_fn!(vgpu_class, [u8; ..]);
+    //impl_trait_fn!(vgpu_signature, [u8; 128]);
+    impl_trait_fn!(license, [u8; 128]);
+    impl_trait_fn!(max_instance, u32);
+    impl_trait_fn!(num_heads, u32);
+    impl_trait_fn!(max_resolution_x, u32);
+    impl_trait_fn!(max_resolution_y, u32);
+    impl_trait_fn!(max_pixels, u32);
+    impl_trait_fn!(frl_config, u32);
+    impl_trait_fn!(cuda_enabled, u32);
+    impl_trait_fn!(ecc_supported, u32);
+    impl_trait_fn!(gpu_instance_size => mig_instance_size, u32);
+    impl_trait_fn!(multi_vgpu_supported, u32);
+    impl_trait_fn!(vdev_id, u64);
+    impl_trait_fn!(pdev_id, u64);
+
+    /*
+    fn profile_size(&mut self) -> Option<&mut u64> {
+        None
+    }
+    */
+
+    impl_trait_fn!(fb_length, u64);
+    impl_trait_fn!(mappable_video_size, u64);
+    impl_trait_fn!(fb_reservation, u64);
+    impl_trait_fn!(encoder_capacity, u32);
+    impl_trait_fn!(bar1_length, u64);
+    impl_trait_fn!(frl_enable, u32);
+    impl_trait_fn!(adapter_name, [u8; 64]);
+    impl_trait_fn!(adapter_name_unicode, [u16; 64]);
+    impl_trait_fn!(short_gpu_name_string, [u8; 64]);
+    impl_trait_fn!(licensed_product_name, [u8; 128]);
+    //impl_trait_fn!(vgpu_extra_params, [u8]);
+}
+
 impl VgpuConfigLike for NvA081CtrlVgpuInfoV525 {
     impl_trait_fn!(vgpu_type, u32);
     impl_trait_fn!(vgpu_name, [u8; ..]);
@@ -272,6 +313,44 @@ impl VgpuConfigLike for NvA081CtrlVgpuInfoV525 {
 }
 
 impl VgpuConfigLike for NvA081CtrlVgpuInfoV580 {
+    impl_trait_fn!(vgpu_type, u32);
+    impl_trait_fn!(vgpu_name, [u8; ..]);
+    impl_trait_fn!(vgpu_class, [u8; ..]);
+    //impl_trait_fn!(vgpu_signature, [u8; 128]);
+    impl_trait_fn!(license, [u8; 128]);
+    impl_trait_fn!(max_instance, u32);
+    impl_trait_fn!(num_heads, u32);
+    impl_trait_fn!(max_resolution_x, u32);
+    impl_trait_fn!(max_resolution_y, u32);
+    impl_trait_fn!(max_pixels, u32);
+    impl_trait_fn!(frl_config, u32);
+    impl_trait_fn!(cuda_enabled, u32);
+    impl_trait_fn!(ecc_supported, u32);
+    impl_trait_fn!(gpu_instance_size => mig_instance_size, u32);
+    impl_trait_fn!(multi_vgpu_supported, u32);
+    impl_trait_fn_aligned!(vdev_id, u64);
+    impl_trait_fn_aligned!(pdev_id, u64);
+
+    /*
+    fn profile_size(&mut self) -> Option<&mut u64> {
+        Some(&mut self.profile_size.0)
+    }
+    */
+
+    impl_trait_fn_aligned!(fb_length, u64);
+    impl_trait_fn_aligned!(mappable_video_size, u64);
+    impl_trait_fn_aligned!(fb_reservation, u64);
+    impl_trait_fn!(encoder_capacity, u32);
+    impl_trait_fn_aligned!(bar1_length, u64);
+    impl_trait_fn!(frl_enable, u32);
+    impl_trait_fn!(adapter_name, [u8; 64]);
+    impl_trait_fn!(adapter_name_unicode, [u16; 64]);
+    impl_trait_fn!(short_gpu_name_string, [u8; 64]);
+    impl_trait_fn!(licensed_product_name, [u8; 128]);
+    //impl_trait_fn!(vgpu_extra_params, [u8]);
+}
+
+impl VgpuConfigLike for NvA081CtrlVgpuInfoV580_95 {
     impl_trait_fn!(vgpu_type, u32);
     impl_trait_fn!(vgpu_name, [u8; ..]);
     impl_trait_fn!(vgpu_class, [u8; ..]);
@@ -634,12 +713,27 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                         error!("Failed to apply profile override");
                         return -1;
                     }
+                } else if
+                    // 19.2+ (580.95+) driver adds `vgpuSsvid` (`u16`) right after `frlEnable`,
+                    // shifting `adapterName` and subsequent fields by 2 bytes and increasing the
+                    // 8-byte aligned structure size by 8 bytes (from 5424 to 5432 bytes).
+                    check_size_raw!(NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580_95)
+                {
+                    let params: &mut NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580_95 =
+                        &mut *io_data.params.cast();
+                    info!("{:#?}", params);
+
+                    if !handle_profile_override(&mut params.vgpu_type_info) {
+                        error!("Failed to apply profile override");
+                        return -1;
+                    }
                 } else {
                     check_size_log! {
                         name: NVA081_CTRL_CMD_VGPU_CONFIG_GET_VGPU_TYPE_INFO,
                         types: [
                             NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV525,
                             NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580,
+                            NvA081CtrlVgpuConfigGetVgpuTypeInfoParamsV580_95,
                         ],
                         other: [5232, 5096],
                     };
@@ -664,12 +758,22 @@ pub unsafe extern "C" fn ioctl(fd: RawFd, request: c_ulong, argp: *mut c_void) -
                         error!("Failed to apply profile override");
                         return -1;
                     }
+                } else if check_size_raw!(NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580_95) {
+                    let params: &mut NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580_95 =
+                        &mut *io_data.params.cast();
+                    info!("{:#?}", params);
+
+                    if !handle_profile_override(params) {
+                        error!("Failed to apply profile override");
+                        return -1;
+                    }
                 } else {
                     check_size_log! {
                         name: NVA082_CTRL_CMD_HOST_VGPU_DEVICE_GET_VGPU_TYPE_INFO,
                         types: [
                             NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV525,
                             NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580,
+                            NvA082CtrlCmdHostVgpuDeviceGetVgpuTypeInfoParamsV580_95,
                         ],
                         other: [],
                     };
